@@ -1,0 +1,389 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #07111f;
+  --card: #0d1b2e;
+  --card2: #11243a;
+  --line: rgba(255,255,255,.09);
+  --text: #f4f7fb;
+  --muted: #91a2b8;
+  --blue: #38a8ff;
+  --blue2: #1677d2;
+  --green: #36d399;
+  --gold: #ffd166;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(30,125,210,.25), transparent 38%),
+    var(--bg);
+  color: var(--text);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    "Noto Sans JP",
+    Arial,
+    sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+.app {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 18px 14px 40px;
+}
+
+/* ヘッダー */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  margin-bottom: 5px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 27px;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+#date {
+  margin-top: 6px;
+}
+
+.refresh {
+  border: 1px solid rgba(56,168,255,.35);
+  background: rgba(56,168,255,.12);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refresh:active {
+  transform: scale(.97);
+}
+
+/* 状態 */
+
+.status-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--card2), var(--card));
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  padding: 15px 17px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.18);
+}
+
+.status-title {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+#status {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+/* エラー */
+
+.notice {
+  background: rgba(255,80,80,.1);
+  border: 1px solid rgba(255,80,80,.25);
+  color: #ffb5b5;
+  border-radius: 13px;
+  padding: 13px;
+  margin-bottom: 14px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* レースカード */
+
+.race-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #102238, #0b1728);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 14px 35px rgba(0,0,0,.25);
+}
+
+.race-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(var(--blue), var(--blue2));
+}
+
+.race-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 17px 17px 13px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.race-name {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(255,255,255,.06);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.score {
+  flex-shrink: 0;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+  padding-top: 3px;
+}
+
+/* 本命 */
+
+.pick {
+  padding: 18px 20px;
+}
+
+.pick-label {
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  margin-bottom: 5px;
+}
+
+.pick-main {
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 15px;
+}
+
+/* 買い目 */
+
+.rows {
+  display: grid;
+  gap: 8px;
+}
+
+.metric {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,.045);
+  border-radius: 11px;
+  padding: 10px 12px;
+}
+
+.metric b {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.metric span {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: .03em;
+}
+
+.metric:first-child span {
+  color: var(--gold);
+}
+
+/* 根拠 */
+
+.reason {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* 選手 */
+
+.racers {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
+  padding: 0 15px 15px;
+}
+
+.racer {
+  min-width: 0;
+  background: rgba(255,255,255,.035);
+  border-radius: 9px;
+  padding: 7px 3px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+  overflow: hidden;
+}
+
+.racer b {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+/* 推奨なし */
+
+.empty {
+  background: linear-gradient(145deg, var(--card2), var(--card));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px 18px;
+  text-align: center;
+  line-height: 1.8;
+}
+
+/* 基準 */
+
+.rules {
+  margin-top: 24px;
+  padding: 18px;
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+}
+
+.rules h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.rules ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+/* フッター */
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+  color: #60738b;
+  font-size: 9px;
+}
+
+/* スマホ */
+
+@media (max-width: 520px) {
+  .app {
+    padding: 16px 11px 30px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  .refresh {
+    padding: 9px 12px;
+  }
+
+  .race-head {
+    padding: 15px 14px 12px 17px;
+  }
+
+  .race-name {
+    font-size: 19px;
+  }
+
+  .score {
+    font-size: 11px;
+  }
+
+  .pick {
+    padding: 16px 17px;
+  }
+
+  .pick-main {
+    font-size: 22px;
+  }
+
+  .metric span {
+    font-size: 15px;
+  }
+
+  .racers {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .race-head {
+    flex-direction: column;
+  }
+
+  .score {
+    padding-top: 0;
+  }
+
+  .racers {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  footer {
+    flex-direction: column;
+  }
+}
