@@ -1,178 +1,30 @@
 <!doctype html>
 <html lang="ja">
-
 <head>
-
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1,viewport-fit=cover"
-  >
-
-  <meta
-    name="theme-color"
-    content="#071426"
-  >
-
-  <meta
-    name="description"
-    content="予想屋サイバーはっちゃん"
-  >
-
-  <title>予想屋サイバーはっちゃん</title>
-
-  <link
-    rel="stylesheet"
-    href="styles.css?v=20260902"
-  >
-
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TEST</title>
 </head>
 
+<body style="
+  background:#071426;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+  padding:80px 20px;
+">
 
-<body>
+  <h1 style="font-size:36px;">
+    予想屋サイバーはっちゃん
+  </h1>
 
-  <main class="app">
+  <p style="font-size:22px;">
+    新しいindex.htmlが読み込まれています
+  </p>
 
-    <header class="topbar">
-
-      <div>
-
-        <div class="eyebrow">
-          BOAT RACE / PERSONAL
-        </div>
-
-        <h1>
-          予想屋サイバーはっちゃん
-        </h1>
-
-        <div
-          id="date"
-          class="muted"
-        ></div>
-
-      </div>
-
-
-      <button
-        id="refresh"
-        class="refresh"
-        type="button"
-      >
-        更新
-      </button>
-
-    </header>
-
-
-    <section class="status-card">
-
-      <div>
-
-        <div class="status-title">
-          判定状況
-        </div>
-
-        <div id="status">
-          データ取得中…
-        </div>
-
-      </div>
-
-      <div
-        id="updated"
-        class="muted"
-      ></div>
-
-    </section>
-
-
-    <section
-      id="notice"
-      class="notice hidden"
-    ></section>
-
-
-    <section id="picks"></section>
-
-
-    <section class="rules">
-
-      <h2>
-        このアプリの基準
-      </h2>
-
-      <ul>
-
-        <li>
-          推奨できるレースだけを表示します。
-        </li>
-
-        <li>
-          自信度の高い順に表示します。
-        </li>
-
-        <li>
-          展示タイム・進入・STなどの直前情報を考慮します。
-        </li>
-
-        <li>
-          予想に変更があった場合は理由を表示します。
-        </li>
-
-        <li>
-          特に自信の高いレースは「激アツ」として表示します。
-        </li>
-
-        <li>
-          結果を取得できたレースは的中率の集計に使用します。
-        </li>
-
-      </ul>
-
-    </section>
-
-
-    <footer>
-
-      <span>
-        データ：Boatrace Open API
-      </span>
-
-      <span>
-        このアプリは投票を行いません
-      </span>
-
-    </footer>
-
-  </main>
-
-
-  <!-- キャッシュ対策のためバージョン番号を付ける -->
-  <script src="app.js?v=20260902"></script>
-
-
-  <!-- 古いService Workerを解除 -->
-  <script>
-
-    if ("serviceWorker" in navigator) {
-
-      navigator.serviceWorker
-        .getRegistrations()
-        .then(function(registrations) {
-
-          registrations.forEach(function(registration) {
-
-            registration.unregister();
-
-          });
-
-        });
-
-    }
-
-  </script>
+  <p>
+    更新テスト：2026/09/02
+  </p>
 
 </body>
-
 </html>
