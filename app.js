@@ -1,269 +1,209 @@
-const API = "https://boatraceopenapi.github.io/api/v1/today.json";
+const API =
+  "https://boatraceopenapi.github.io/api/v1/today.json";
 
-document.body.innerHTML = `
-  <main style="
-    max-width:900px;
-    margin:0 auto;
-    padding:24px 16px;
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    background:#071426;
-    color:#fff;
-    min-height:100vh;
-    box-sizing:border-box;
-  ">
+const STADIUMS = {
+  1:"桐生", 2:"戸田", 3:"江戸川", 4:"平和島",
+  5:"多摩川", 6:"浜名湖", 7:"蒲郡", 8:"常滑",
+  9:"津", 10:"三国", 11:"びわこ", 12:"住之江",
+  13:"尼崎", 14:"鳴門", 15:"丸亀", 16:"児島",
+  17:"宮島", 18:"徳山", 19:"下関", 20:"若松",
+  21:"芦屋", 22:"福岡", 23:"唐津", 24:"大村"
+};
 
-    <h1 style="
-      font-size:28px;
-      margin:0 0 8px;
-    ">
-      予想屋サイバーはっちゃん
-    </h1>
+const GRADES = {
+  1: "一般",
+  2: "G3",
+  3: "G2",
+  4: "G1",
+  5: "SG"
+};
 
-    <div style="
-      color:#8ea3bb;
-      margin-bottom:24px;
-    ">
-      APIデータ確認
-    </div>
+const $ = s => document.querySelector(s);
 
-    <div id="status" style="
-      padding:18px;
-      border-radius:14px;
-      background:#10233a;
-      margin-bottom:20px;
-    ">
-      データ取得中…
-    </div>
+const num = v => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
 
-    <div id="result"></div>
+const clamp = (v, min, max) =>
+  Math.max(min, Math.min(max, v));
 
-    <button id="refresh" style="
-      margin-top:20px;
-      width:100%;
-      padding:15px;
-      border:0;
-      border-radius:12px;
-      background:#1683ff;
-      color:white;
-      font-size:16px;
-      font-weight:bold;
-    ">
-      更新
-    </button>
+function rankName(n) {
+  return {
+    1:"A1",
+    2:"A2",
+    3:"B1",
+    4:"B2"
+  }[n] || "-";
+}
 
-  </main>
-`;
+function fmtTime(v) {
+  const m = String(v || "")
+    .match(/(\d{2}):(\d{2})/);
 
-const status = document.getElementById("status");
-const result = document.getElementById("result");
-const refresh = document.getElementById("refresh");
+  return m
+    ? `${m[1]}:${m[2]}`
+    : "--:--";
+}
 
-async function load() {
+function esc(v) {
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 
-  status.textContent = "APIデータ取得中…";
-  result.innerHTML = "";
 
-  try {
+/* =========================
+   レースの評価
+========================= */
 
-    const response = await fetch(API, {
-      cache: "no-store"
-    });
+function scoreRace(r) {
 
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
+  const racers =
+    Object.values(r.racers || {})
+      .sort((a,b) =>
+        Number(a.entry_number) -
+        Number(b.entry_number)
+      );
 
-    const data = await response.json();
+  if (racers.length !== 6) {
+    return null;
+  }
 
-    console.log("取得したAPIデータ:", data);
+  const one =
+    racers.find(x =>
+      Number(x.entry_number) === 1
+    );
 
-    const programs = data.programs || {};
-    const stadiums = programs.stadiums || {};
+  if (!one) {
+    return null;
+  }
 
-    const stadiumList = Object.values(stadiums);
+  const preview =
+    r.preview?.racers || {};
 
-    let races = [];
+  const p1 =
+    preview["1"] || {};
 
-    for (const stadium of stadiumList) {
+  let score = 0;
 
-      const stadiumRaces = stadium.races || {};
+  const rank =
+    num(one.rank_number);
 
-      for (const race of Object.values(stadiumRaces)) {
-        races.push(race);
-      }
+  const national =
+    num(one.national_win_rate) || 0;
 
-    }
+  const local =
+    num(one.local_win_rate) || 0;
 
-    status.innerHTML = `
-      <div style="
-        font-size:20px;
-        font-weight:bold;
-        margin-bottom:12px;
-      ">
-        APIデータ取得成功
-      </div>
+  const national3 =
+    num(one.national_top_3_percent) || 0;
 
-      <div>
-        開催場数：<b>${stadiumList.length}</b>
-      </div>
+  const local3 =
+    num(one.local_top_3_percent) || 0;
 
-      <div style="margin-top:6px;">
-        レース数：<b>${races.length}</b>
-      </div>
-    `;
+  const motor3 =
+    num(one.motor_top_3_percent) || 0;
 
-    if (races.length === 0) {
 
-      result.innerHTML = `
-        <div style="
-          padding:20px;
-          background:#32151a;
-          border-radius:14px;
-        ">
-          レースデータが0件です。
-        </div>
-      `;
+  /* 級別 */
 
-      return;
-    }
+  score += ({
+    1:22,
+    2:15,
+    3:8,
+    4:2
+  }[rank] || 0);
 
-    /*
-      最初のレースの実データを確認する
-    */
 
-    const firstRace = races[0];
+  /* 全国成績 */
 
-    const racerData =
-      Object.values(firstRace.racers || {});
+  score += clamp(
+    national * 3.2,
+    0,
+    24
+  );
 
-    result.innerHTML = `
+  score += clamp(
+    local * 2.2,
+    0,
+    14
+  );
 
-      <div style="
-        padding:20px;
-        border-radius:14px;
-        background:#10233a;
-        margin-bottom:20px;
-      ">
+  score += clamp(
+    national3 * 0.10,
+    0,
+    9
+  );
 
-        <h2 style="margin-top:0;">
-          最初のレース
-        </h2>
+  score += clamp(
+    local3 * 0.06,
+    0,
+    5
+  );
 
-        <div style="font-size:18px;margin-bottom:10px;">
-          場：
-          <b>${firstRace.stadium_number ?? "-"}</b>
-        </div>
+  score += clamp(
+    motor3 * 0.05,
+    0,
+    4
+  );
 
-        <div style="font-size:18px;margin-bottom:10px;">
-          レース：
-          <b>${firstRace.race_number ?? "-"}R</b>
-        </div>
 
-        <div style="margin-bottom:10px;">
-          タイトル：
-          ${firstRace.title ?? "-"}
-        </div>
+  /* 平均ST */
 
-        <div>
-          出走選手：
-          <b>${racerData.length}人</b>
-        </div>
+  const avgST =
+    num(one.average_start_timing);
 
-      </div>
+  if (avgST !== null) {
 
-      <div style="
-        padding:20px;
-        border-radius:14px;
-        background:#10233a;
-      ">
-
-        <h2 style="margin-top:0;">
-          出走表
-        </h2>
-
-        ${
-          racerData.length
-            ? racerData.map(r => `
-                <div style="
-                  padding:12px 0;
-                  border-bottom:1px solid #294057;
-                ">
-
-                  <b style="font-size:20px;">
-                    ${r.entry_number ?? "-"}号艇
-                  </b>
-
-                  <span style="margin-left:10px;">
-                    ${r.name ?? "-"}
-                  </span>
-
-                  <span style="
-                    margin-left:10px;
-                    color:#8ea3bb;
-                  ">
-                    ${r.rank_number ?? "-"}
-                  </span>
-
-                </div>
-              `).join("")
-            : `
-              <div>
-                出走選手データを取得できませんでした。
-              </div>
-            `
-        }
-
-      </div>
-
-      <details style="
-        margin-top:20px;
-        padding:15px;
-        background:#10233a;
-        border-radius:14px;
-      ">
-
-        <summary style="
-          cursor:pointer;
-          font-weight:bold;
-        ">
-          APIの実データを確認
-        </summary>
-
-        <pre style="
-          white-space:pre-wrap;
-          word-break:break-word;
-          font-size:11px;
-          color:#b8c7d9;
-          margin-top:15px;
-        ">${escapeHtml(JSON.stringify(firstRace,null,2))}</pre>
-
-      </details>
-    `;
-
-  } catch (error) {
-
-    console.error(error);
-
-    status.innerHTML = `
-      <b>API取得エラー</b>
-      <div style="margin-top:8px;">
-        ${escapeHtml(error.message)}
-      </div>
-    `;
+    score += clamp(
+      (0.25 - avgST) * 25,
+      -3,
+      5
+    );
 
   }
-}
 
-function escapeHtml(value) {
 
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+  /* 1号艇 */
 
-refresh.addEventListener("click", load);
+  if (
+    num(p1.course_number) === 1 ||
+    p1.course_number == null
+  ) {
+    score += 5;
+  }
 
-load();
+
+  /* 展示タイム */
+
+  const exhibition =
+    racers.map(x => {
+
+      const p =
+        preview[String(x.entry_number)] || {};
+
+      return {
+        entry: Number(x.entry_number),
+        time: num(p.exhibition_time)
+      };
+
+    })
+    .filter(x => x.time !== null);
+
+
+  if (exhibition.length === 6) {
+
+    exhibition.sort(
+      (a,b) => a.time - b.time
+    );
+
+    const position =
+      exhibition.findIndex(
+        x => x.entry === 1
+      );
+
+    if (position === 0)
