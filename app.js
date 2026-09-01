@@ -1,15 +1,15 @@
-const API="https://boatraceopenapi.github.io/api/v1/today.json";
+const API = "https://boatraceopenapi.github.io/api/v1/today.json";
 
-const STADIUMS={
-  1:"桐生",2:"戸田",3:"江戸川",4:"平和島",
-  5:"多摩川",6:"浜名湖",7:"蒲郡",8:"常滑",
-  9:"津",10:"三国",11:"びわこ",12:"住之江",
-  13:"尼崎",14:"鳴門",15:"丸亀",16:"児島",
-  17:"宮島",18:"徳山",19:"下関",20:"若松",
-  21:"芦屋",22:"福岡",23:"唐津",24:"大村"
+const STADIUMS = {
+  1:"桐生", 2:"戸田", 3:"江戸川", 4:"平和島",
+  5:"多摩川", 6:"浜名湖", 7:"蒲郡", 8:"常滑",
+  9:"津", 10:"三国", 11:"びわこ", 12:"住之江",
+  13:"尼崎", 14:"鳴門", 15:"丸亀", 16:"児島",
+  17:"宮島", 18:"徳山", 19:"下関", 20:"若松",
+  21:"芦屋", 22:"福岡", 23:"唐津", 24:"大村"
 };
 
-const GRADES={
+const GRADES = {
   1:"SG",
   2:"G1",
   3:"G2",
@@ -17,181 +17,176 @@ const GRADES={
   5:"一般"
 };
 
-const $=s=>document.querySelector(s);
+const $ = s => document.querySelector(s);
 
-const num=v=>{
-  const n=Number(v);
-  return Number.isFinite(n)?n:null;
-};
+function num(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function clamp(v,min,max) {
+  return Math.max(min,Math.min(max,v));
+}
 
-const esc=v=>String(v??"")
-  .replaceAll("&","&amp;")
-  .replaceAll("<","&lt;")
-  .replaceAll(">","&gt;")
-  .replaceAll('"',"&quot;")
-  .replaceAll("'","&#039;");
+function esc(v) {
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 
-function rankName(n){
-  return ({
+function rankName(n) {
+  return {
     1:"A1",
     2:"A2",
     3:"B1",
     4:"B2"
-  }[n]||"-");
+  }[n] || "-";
 }
 
-function fmtTime(v){
-  const m=String(v||"").match(/(\d{2}):(\d{2})/);
-  return m?`${m[1]}:${m[2]}`:"--:--";
+function fmtTime(v) {
+  const s = String(v || "");
+  const m = s.match(/(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : "--:--";
 }
 
-function raceKey(r){
+function raceKey(r) {
   return `${r.date}-${r.stadium_number}-${r.race_number}`;
-}
-
-function loadJSON(key,fallback){
-  try{
-    return JSON.parse(localStorage.getItem(key)||"");
-  }catch(_){
-    return fallback;
-  }
-}
-
-function saveJSON(key,value){
-  try{
-    localStorage.setItem(key,JSON.stringify(value));
-  }catch(_){}
 }
 
 
 /* =========================
-   UI
+   タイトル
 ========================= */
 
-function injectStyle(){
+function setupTitle() {
 
-  if(document.getElementById("cyber-style"))return;
+  const h1 = $("h1");
 
-  const style=document.createElement("style");
-  style.id="cyber-style";
+  if (h1) {
+    h1.textContent = "予想屋サイバーはっちゃん";
+  }
 
-  style.textContent=`
+  const eyebrow = document.querySelector(".eyebrow");
 
-    .cyber-title{
-      font-size:2rem;
-      font-weight:900;
-      letter-spacing:.02em;
-      margin:0;
-    }
+  if (eyebrow) {
+    eyebrow.textContent = "BOAT RACE / CYBER HATCHAN";
+  }
+}
 
-    .cyber-subtitle{
-      margin-top:4px;
-      font-size:.85rem;
-      color:#64748b;
-    }
 
-    .stats-card{
+/* =========================
+   CSS追加
+========================= */
+
+function setupStyle() {
+
+  if (document.getElementById("cyber-style")) return;
+
+  const style = document.createElement("style");
+
+  style.id = "cyber-style";
+
+  style.textContent = `
+
+    .cyber-stats {
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:8px;
-      margin:14px 0;
+      margin:12px 0;
     }
 
-    .stat-box{
+    .cyber-stat {
       background:#111827;
       color:white;
       border-radius:14px;
-      padding:12px 8px;
+      padding:12px 5px;
       text-align:center;
     }
 
-    .stat-label{
+    .cyber-stat-label {
       font-size:.7rem;
-      color:#cbd5e1;
+      opacity:.75;
     }
 
-    .stat-value{
-      font-size:1.3rem;
-      font-weight:800;
+    .cyber-stat-value {
+      font-size:1.25rem;
+      font-weight:900;
       margin-top:3px;
     }
 
-    .race-card.hot{
+    .race-card.hot {
       border:2px solid #f59e0b;
-      box-shadow:0 8px 25px rgba(245,158,11,.18);
+      box-shadow:0 5px 20px rgba(245,158,11,.2);
     }
 
-    .hot-badge{
+    .hot-badge {
       display:inline-block;
       background:#f59e0b;
       color:#111827;
       font-weight:900;
       padding:4px 9px;
       border-radius:999px;
-      font-size:.75rem;
       margin-bottom:6px;
-    }
-
-    .grade{
-      display:inline-block;
-      font-weight:800;
-      padding:3px 8px;
-      border-radius:7px;
-      background:#e2e8f0;
-      margin-right:6px;
       font-size:.75rem;
     }
 
-    .series-name{
-      font-size:1rem;
+    .grade-badge {
+      display:inline-block;
+      background:#e5e7eb;
+      border-radius:6px;
+      padding:3px 7px;
+      font-weight:800;
+      font-size:.75rem;
+      margin-right:5px;
+    }
+
+    .series-title {
       font-weight:800;
       margin-top:7px;
     }
 
-    .day-name{
+    .race-day {
       font-size:.8rem;
-      color:#64748b;
-      margin-top:3px;
+      opacity:.7;
+      margin-top:2px;
     }
 
-    .prediction-change{
+    .change-box {
       margin-top:10px;
       padding:10px;
-      border-radius:10px;
       background:#fff7ed;
       border-left:4px solid #f97316;
-      color:#9a3412;
+      border-radius:8px;
+      font-size:.8rem;
+    }
+
+    .change-box b {
+      display:block;
+      margin-bottom:4px;
+    }
+
+    .no-data-box {
+      margin-top:10px;
+      padding:12px;
+      background:#f1f5f9;
+      border-radius:10px;
       font-size:.82rem;
     }
 
-    .prediction-change b{
-      display:block;
-      margin-bottom:3px;
-    }
-
-    .reason-list{
-      margin:0;
-      padding-left:18px;
-    }
-
-    .confidence-high{
+    .confidence-hot {
       color:#dc2626;
       font-weight:900;
     }
 
-    .confidence-normal{
+    .confidence-normal {
       font-weight:800;
     }
 
-    .empty{
-      padding:24px 14px;
-      text-align:center;
-    }
-
-    .update-note{
-      font-size:.78rem;
+    .debug-info {
+      font-size:.75rem;
       color:#64748b;
       margin-top:8px;
     }
@@ -203,229 +198,285 @@ function injectStyle(){
 
 
 /* =========================
-   スコアリング
+   スコア計算
 ========================= */
 
-function scoreRace(r){
+function scoreRace(r) {
 
-  const rs=Object.values(r.racers||{})
-    .sort((a,b)=>a.entry_number-b.entry_number);
+  const racers = Object.values(r.racers || {})
+    .sort((a,b) =>
+      num(a.entry_number) - num(b.entry_number)
+    );
 
-  if(rs.length!==6)return null;
+  if (racers.length !== 6) {
+    return null;
+  }
 
-  const one=rs.find(x=>x.entry_number===1);
+  const preview = r.preview?.racers || {};
 
-  if(!one)return null;
+  const one = racers.find(
+    x => num(x.entry_number) === 1
+  );
 
-  const prs=r.preview?.racers||{};
-  const p1=prs["1"]||{};
+  if (!one) {
+    return null;
+  }
 
-  const rank1=num(one.rank_number);
-  const course1=num(p1.course_number)||1;
+  const p1 = preview["1"] || {};
 
-  let s=0;
+  let score = 0;
 
-  /* 1号艇の基本能力 */
+  /* A1/A2/B1/B2 */
+  score += ({
+    1:30,
+    2:22,
+    3:12,
+    4:4
+  }[num(one.rank_number)] || 0);
 
-  s+=({
-    1:22,
-    2:15,
-    3:8,
-    4:2
-  }[rank1]||0);
-
-  s+=clamp(
-    (num(one.national_win_rate)||0)*3.2,
+  /* 全国勝率 */
+  score += clamp(
+    (num(one.national_win_rate) || 0) * 3.0,
     0,
     24
   );
 
-  s+=clamp(
-    (num(one.local_win_rate)||0)*2.2,
+  /* 当地勝率 */
+  score += clamp(
+    (num(one.local_win_rate) || 0) * 1.8,
     0,
-    14
+    12
   );
 
-  s+=clamp(
-    (num(one.national_top_3_percent)||0)*.10,
+  /* 全国3連対率 */
+  score += clamp(
+    (num(one.national_top_3_percent) || 0) * .08,
     0,
-    9
+    8
   );
 
-  s+=clamp(
-    (num(one.local_top_3_percent)||0)*.06,
+  /* 当地3連対率 */
+  score += clamp(
+    (num(one.local_top_3_percent) || 0) * .04,
     0,
     5
   );
 
-  s+=clamp(
-    (num(one.motor_top_3_percent)||0)*.05,
+  /* モーター */
+  score += clamp(
+    (num(one.motor_top_3_percent) || 0) * .03,
     0,
-    4
+    3
   );
 
-  const avg=num(one.average_start_timing);
+  /* 平均ST */
+  const avgST = num(one.average_start_timing);
 
-  if(avg!==null){
-    s+=clamp(
-      (.25-avg)*25,
-      -3,
-      5
-    );
+  if (avgST !== null) {
+
+    if (avgST <= .15) score += 5;
+    else if (avgST <= .17) score += 3;
+    else if (avgST >= .20) score -= 2;
+
   }
 
-  if(course1===1)s+=5;
+  /* 1コース */
+  if (num(p1.course_number) === 1) {
+    score += 8;
+  }
 
 
-  /* 相手評価 */
+  /* =========================
+     2着3着候補
+  ========================= */
 
-  const rivals=rs.slice(1)
-    .map(x=>{
+  const candidates = racers
+    .filter(x => num(x.entry_number) !== 1)
+    .map(x => {
 
-      let v=({
-        1:17,
-        2:13,
-        3:8,
-        4:3
-      }[num(x.rank_number)]||0);
+      const n = num(x.entry_number);
+      const p = preview[String(n)] || {};
 
-      v+=clamp(
-        (num(x.national_win_rate)||0)*1.8,
+      let v = 0;
+
+      v += ({
+        1:20,
+        2:16,
+        3:11,
+        4:5
+      }[num(x.rank_number)] || 0);
+
+      v += clamp(
+        (num(x.national_top_3_percent) || 0) * .07,
         0,
-        12
+        7
       );
 
-      v+=clamp(
-        (num(x.motor_top_3_percent)||0)*.04,
+      v += clamp(
+        (num(x.local_top_3_percent) || 0) * .03,
+        0,
+        4
+      );
+
+      v += clamp(
+        (num(x.motor_top_3_percent) || 0) * .03,
         0,
         3
       );
 
-      return{x,v};
+      const exhibition =
+        num(p.exhibition_time);
+
+      if (exhibition !== null) {
+
+        if (exhibition <= 6.75) v += 5;
+        else if (exhibition <= 6.80) v += 3;
+        else if (exhibition >= 6.90) v -= 2;
+
+      }
+
+      if (
+        num(p.course_number) !== null &&
+        num(p.course_number) <= 3
+      ) {
+        v += 2;
+      }
+
+      return {
+        racer:x,
+        score:v
+      };
 
     })
-    .sort((a,b)=>b.v-a.v);
+    .sort((a,b)=>b.score-a.score);
 
 
-  /* 展示 */
+  const a = candidates[0]?.racer?.entry_number;
+  const b = candidates[1]?.racer?.entry_number;
+  const c = candidates[2]?.racer?.entry_number;
 
-  const ex=rs.map(x=>({
-    x,
-    t:num(
-      prs[String(x.entry_number)]?.exhibition_time
-    )
-  }))
-  .filter(z=>z.t!==null);
 
-  if(ex.length===6){
+  /* =========================
+     展示評価
+  ========================= */
 
-    const pos=[...ex]
-      .sort((a,b)=>a.t-b.t)
-      .findIndex(
-        z=>z.x.entry_number===1
-      );
+  const exhibitions = racers
+    .map(x => {
 
-    if(pos===0)s+=5;
-    else if(pos===1)s+=2;
-    else if(pos>=4)s-=5;
+      const p =
+        preview[String(x.entry_number)] || {};
+
+      return {
+        number:x.entry_number,
+        time:num(p.exhibition_time)
+      };
+
+    })
+    .filter(x => x.time !== null);
+
+
+  let exhibitionRank = null;
+
+  if (exhibitions.length >= 4) {
+
+    const sorted = [...exhibitions]
+      .sort((a,b)=>a.time-b.time);
+
+    exhibitionRank =
+      sorted.findIndex(
+        x => x.number === 1
+      ) + 1;
+
+    if (exhibitionRank === 1) {
+      score += 7;
+    }
+    else if (exhibitionRank === 2) {
+      score += 3;
+    }
+    else if (exhibitionRank >= 5) {
+      score -= 5;
+    }
+
   }
 
 
-  /* 展示ST */
+  /* =========================
+     展示ST
+  ========================= */
 
-  const st=num(p1.start_timing);
+  const exhibitionST =
+    num(p1.start_timing);
 
-  if(st!==null){
+  if (exhibitionST !== null) {
 
-    if(st<=.10)s+=3;
-    else if(st>=.20)s-=3;
+    if (exhibitionST <= .10) {
+      score += 4;
+    }
+    else if (exhibitionST <= .13) {
+      score += 2;
+    }
+    else if (exhibitionST >= .20) {
+      score -= 3;
+    }
 
   }
 
 
-  const rivalGap=
-    s-(rivals[0]?.v||0);
-
-  const confidence=
-    clamp(Math.round(s),0,100);
-
-
-  /* 2・3着候補 */
-
-  const cs=rs.slice(1)
-    .map(x=>{
-
-      const p=prs[String(x.entry_number)]||{};
-
-      let v=({
-        1:17,
-        2:13,
-        3:8,
-        4:3
-      }[num(x.rank_number)]||0);
-
-      v+=
-        (num(x.national_top_3_percent)||0)*.08;
-
-      v+=
-        (num(x.local_top_3_percent)||0)*.04;
-
-      v+=
-        (num(x.motor_top_3_percent)||0)*.04;
-
-      if(
-        p.course_number &&
-        p.course_number<=3
-      ){
-        v+=2;
-      }
-
-      const et=num(p.exhibition_time);
-
-      if(et!==null){
-        v+=Math.max(0,1-et)*8;
-      }
-
-      return{x,v};
-
-    })
-    .sort((a,b)=>b.v-a.v);
+  score = clamp(
+    Math.round(score),
+    0,
+    100
+  );
 
 
-  const show=
-    confidence>=68 &&
-    rivalGap>=45 &&
-    rank1<=2 &&
-    (num(one.national_top_3_percent)||0)>=50;
+  /* =========================
+     推奨判定
+     
+     前回より大幅に緩和。
+     ただしA級1号艇を中心にする。
+  ========================= */
+
+  const rank = num(one.rank_number);
+
+  const goodRank =
+    rank === 1 ||
+    rank === 2;
+
+  const goodNational =
+    (num(one.national_top_3_percent) || 0) >= 45;
+
+  const show =
+    score >= 55 &&
+    goodRank &&
+    goodNational;
 
 
-  const hot=
-    confidence>=82 &&
-    rivalGap>=55 &&
-    rank1===1;
+  const hot =
+    score >= 78 &&
+    rank === 1 &&
+    exhibitionRank !== 5 &&
+    exhibitionRank !== 6;
 
 
-  return{
+  return {
 
     r,
 
-    s:confidence,
+    racers,
 
-    rivalGap,
+    preview,
+
+    one,
+
+    score,
 
     show,
 
     hot,
 
-    a:cs[0]?.x.entry_number,
-    b:cs[1]?.x.entry_number,
-    c:cs[2]?.x.entry_number,
-
-    one,
-
-    racers:rs,
-
-    preview:prs
+    a,
+    b,
+    c
 
   };
 }
@@ -435,16 +486,18 @@ function scoreRace(r){
    買い目
 ========================= */
 
-function combos(x){
+function makeCombos(x) {
 
-  if(!x.a||!x.b)return[];
+  if (!x.a || !x.b) {
+    return [];
+  }
 
-  const out=[
+  const out = [
     `1-${x.a}-${x.b}`,
     `1-${x.b}-${x.a}`
   ];
 
-  if(x.c){
+  if (x.c) {
 
     out.push(
       `1-${x.a}-${x.c}`
@@ -456,7 +509,7 @@ function combos(x){
 
   }
 
-  return[...new Set(out)];
+  return [...new Set(out)];
 }
 
 
@@ -464,30 +517,32 @@ function combos(x){
    予想理由
 ========================= */
 
-function reasons(x){
+function makeReasons(x) {
 
-  const o=x.one;
-  const p=x.preview["1"]||{};
+  const o = x.one;
+  const p = x.preview["1"] || {};
 
-  const a=[];
+  const reasons = [];
 
-  a.push(
+  reasons.push(
     `${rankName(o.rank_number)}・全国勝率 ${
-      num(o.national_win_rate)?.toFixed(2)??"-"
+      num(o.national_win_rate)?.toFixed(2) ?? "-"
     }`
   );
 
-  if(num(o.local_win_rate)!==null){
+  if (num(o.local_win_rate) !== null) {
 
-    a.push(
-      `当地勝率 ${num(o.local_win_rate).toFixed(2)}`
+    reasons.push(
+      `当地勝率 ${
+        num(o.local_win_rate).toFixed(2)
+      }`
     );
 
   }
 
-  if(num(o.national_top_3_percent)!==null){
+  if (num(o.national_top_3_percent) !== null) {
 
-    a.push(
+    reasons.push(
       `全国3連対率 ${
         num(o.national_top_3_percent).toFixed(1)
       }%`
@@ -495,340 +550,159 @@ function reasons(x){
 
   }
 
-  if(num(p.exhibition_time)!==null){
+  if (num(o.motor_top_3_percent) !== null) {
 
-    a.push(
-      `展示 ${num(p.exhibition_time).toFixed(2)}秒`
+    reasons.push(
+      `モーター3連対率 ${
+        num(o.motor_top_3_percent).toFixed(1)
+      }%`
     );
 
   }
 
-  if(num(p.start_timing)!==null){
+  if (num(p.exhibition_time) !== null) {
 
-    a.push(
-      `展示ST ${num(p.start_timing).toFixed(2)}`
+    reasons.push(
+      `展示 ${
+        num(p.exhibition_time).toFixed(2)
+      }秒`
     );
 
   }
 
-  return a;
+  if (num(p.start_timing) !== null) {
+
+    reasons.push(
+      `展示ST ${
+        num(p.start_timing).toFixed(2)
+      }`
+    );
+
+  }
+
+  return reasons;
 }
 
 
 /* =========================
-   変更理由
+   前回予想との比較
 ========================= */
 
-function detectChanges(x){
+function detectChanges(x) {
 
-  const r=x.r;
-  const key=raceKey(r);
+  const key = raceKey(x.r);
 
-  const oldData=
-    loadJSON("cyberRaceSnapshots",{});
+  let history = {};
 
-  const old=oldData[key];
-
-  const changes=[];
-
-  const p=x.preview["1"]||{};
-
-  if(!old){
-
-    oldData[key]={
-      prediction:combos(x),
-      course:p.course_number??null,
-      exhibition:p.exhibition_time??null,
-      st:p.start_timing??null,
-      score:x.s,
-      updated:Date.now()
-    };
-
-    saveJSON(
-      "cyberRaceSnapshots",
-      oldData
-    );
-
-    return[];
+  try {
+    history =
+      JSON.parse(
+        localStorage.getItem(
+          "cyberRaceSnapshots"
+        ) || "{}"
+      );
+  }
+  catch (_) {
+    history = {};
   }
 
+  const p = x.preview["1"] || {};
 
-  if(
-    old.course!==p.course_number &&
-    p.course_number!=null
-  ){
+  const current = {
+    course:num(p.course_number),
+    exhibition:num(p.exhibition_time),
+    st:num(p.start_timing),
+    combos:makeCombos(x)
+  };
 
-    changes.push(
-      `1号艇の進入コースが ${old.course??"-"} → ${p.course_number} に変更`
-    );
+  const old = history[key];
 
+  history[key] = current;
+
+  localStorage.setItem(
+    "cyberRaceSnapshots",
+    JSON.stringify(history)
+  );
+
+  if (!old) {
+    return [];
   }
 
+  const changes = [];
 
-  if(
-    old.exhibition!=null &&
-    p.exhibition_time!=null &&
-    Math.abs(
-      old.exhibition-p.exhibition_time
-    )>=0.03
-  ){
+  if (
+    old.course !== current.course &&
+    current.course !== null
+  ) {
 
     changes.push(
-      `1号艇の展示タイムが ${
-        old.exhibition.toFixed(2)
+      `進入コースが ${
+        old.course ?? "-"
       } → ${
-        p.exhibition_time.toFixed(2)
-      }秒に変化`
-    );
-
-  }
-
-
-  if(
-    old.st!=null &&
-    p.start_timing!=null &&
-    Math.abs(
-      old.st-p.start_timing
-    )>=0.03
-  ){
-
-    changes.push(
-      `1号艇の展示STが ${
-        old.st.toFixed(2)
-      } → ${
-        p.start_timing.toFixed(2)
+        current.course
       } に変化`
     );
 
   }
 
-
-  const oldPrediction=
-    (old.prediction||[]).join(",");
-
-  const newPrediction=
-    combos(x).join(",");
-
-  if(
-    oldPrediction &&
-    oldPrediction!==newPrediction
-  ){
+  if (
+    old.exhibition !== null &&
+    current.exhibition !== null &&
+    Math.abs(
+      old.exhibition-current.exhibition
+    ) >= .03
+  ) {
 
     changes.push(
-      `買い目が ${oldPrediction} → ${newPrediction} に変更`
+      `展示タイムが ${
+        old.exhibition.toFixed(2)
+      } → ${
+        current.exhibition.toFixed(2)
+      }秒に変化`
     );
 
   }
 
+  if (
+    old.st !== null &&
+    current.st !== null &&
+    Math.abs(
+      old.st-current.st
+    ) >= .03
+  ) {
 
-  oldData[key]={
-    prediction:combos(x),
-    course:p.course_number??old.course,
-    exhibition:p.exhibition_time??old.exhibition,
-    st:p.start_timing??old.st,
-    score:x.s,
-    updated:Date.now()
-  };
+    changes.push(
+      `展示STが ${
+        old.st.toFixed(2)
+      } → ${
+        current.st.toFixed(2)
+      }に変化`
+    );
 
-  saveJSON(
-    "cyberRaceSnapshots",
-    oldData
-  );
+  }
+
+  const oldCombos =
+    (old.combos || []).join(",");
+
+  const newCombos =
+    current.combos.join(",");
+
+  if (
+    oldCombos &&
+    oldCombos !== newCombos
+  ) {
+
+    changes.push(
+      `買い目が ${
+        oldCombos
+      } → ${
+        newCombos
+      } に変更`
+    );
+
+  }
 
   return changes;
-}
-
-
-/* =========================
-   的中履歴
-========================= */
-
-function saveResult(r){
-
-  const trifecta=
-    r.result?.payouts?.trifecta?.[0];
-
-  if(!trifecta)return;
-
-  const key=raceKey(r);
-
-  const history=
-    loadJSON("cyberHistory",[]);
-
-  if(
-    history.some(x=>x.key===key)
-  ){
-    return;
-  }
-
-  const predictions=
-    loadJSON("cyberPredictions",{});
-
-  const prediction=
-    predictions[key];
-
-  if(!prediction)return;
-
-  const actual=
-    trifecta.combination;
-
-  const hit=
-    prediction.combos.includes(actual);
-
-  history.push({
-
-    key,
-
-    date:r.date,
-
-    month:r.date?.slice(0,7),
-
-    stadium:r.stadium_number,
-
-    race:r.race_number,
-
-    actual,
-
-    predictions:prediction.combos,
-
-    confidence:prediction.confidence,
-
-    hot:prediction.hot,
-
-    hit,
-
-    at:Date.now()
-
-  });
-
-  saveJSON(
-    "cyberHistory",
-    history
-  );
-}
-
-
-/* =========================
-   予想を保存
-========================= */
-
-function savePrediction(x){
-
-  const key=raceKey(x.r);
-
-  const predictions=
-    loadJSON("cyberPredictions",{});
-
-  const current=combos(x);
-
-  predictions[key]={
-
-    combos:current,
-
-    confidence:x.s,
-
-    hot:x.hot,
-
-    updated:Date.now()
-
-  };
-
-  saveJSON(
-    "cyberPredictions",
-    predictions
-  );
-}
-
-
-/* =========================
-   的中率
-========================= */
-
-function rate(items){
-
-  if(!items.length)return "--";
-
-  const hits=
-    items.filter(x=>x.hit).length;
-
-  return `${Math.round(
-    hits/items.length*100
-  )}%`;
-}
-
-function renderStats(){
-
-  const history=
-    loadJSON("cyberHistory",[]);
-
-  const today=
-    new Date().toISOString().slice(0,10);
-
-  const month=
-    today.slice(0,7);
-
-  const dayItems=
-    history.filter(x=>x.date===today);
-
-  const monthItems=
-    history.filter(x=>x.month===month);
-
-  const allItems=
-    history;
-
-  let box=document.getElementById(
-    "cyberStats"
-  );
-
-  if(!box){
-
-    box=document.createElement("section");
-
-    box.id="cyberStats";
-    box.className="stats-card";
-
-    const status=
-      document.querySelector(".status-card");
-
-    if(status){
-      status.insertAdjacentElement(
-        "afterend",
-        box
-      );
-    }
-
-  }
-
-  box.innerHTML=`
-
-    <div class="stat-box">
-      <div class="stat-label">
-        当日的中率
-      </div>
-      <div class="stat-value">
-        ${rate(dayItems)}
-      </div>
-    </div>
-
-    <div class="stat-box">
-      <div class="stat-label">
-        今月の的中率
-      </div>
-      <div class="stat-value">
-        ${rate(monthItems)}
-      </div>
-    </div>
-
-    <div class="stat-box">
-      <div class="stat-label">
-        全期間的中率
-      </div>
-      <div class="stat-value">
-        ${rate(allItems)}
-      </div>
-    </div>
-
-  `;
 }
 
 
@@ -836,115 +710,121 @@ function renderStats(){
    レース表示
 ========================= */
 
-function renderPick(x){
+function renderRace(x) {
 
-  const r=x.r;
-  const cs=combos(x);
+  const r = x.r;
 
-  const grade=
-    GRADES[num(r.grade_number)]||"一般";
+  const combos =
+    makeCombos(x);
 
-  const day=
+  const grade =
+    GRADES[num(r.grade_number)] ||
+    "一般";
+
+  const day =
     r.day_number
       ? `${r.day_number}日目`
       : "";
 
-  const title=
-    r.title||"";
-
-  const subtitle=
-    r.subtitle||"";
-
-  const changeReasons=
+  const changes =
     detectChanges(x);
 
-  const reasonText=
-    reasons(x);
+  const reasons =
+    makeReasons(x);
 
 
-  const racers=
-    x.racers.map(z=>
+  const racers =
+    x.racers.map(z =>
+
       `<div class="racer">
         <b>${esc(z.entry_number)}</b>
         ${esc(z.name)}
         <br>
         ${rankName(z.rank_number)}
       </div>`
+
     ).join("");
 
 
-  const changeHTML=
-    changeReasons.length
+  const changeHTML =
+    changes.length
       ? `
-        <div class="prediction-change">
+        <div class="change-box">
+
           <b>予想変更</b>
-          <ul class="reason-list">
-            ${changeReasons.map(
-              x=>`<li>${esc(x)}</li>`
-            ).join("")}
-          </ul>
+
+          ${changes
+            .map(
+              c=>`・${esc(c)}`
+            )
+            .join("<br>")}
+
         </div>
       `
       : "";
 
 
-  const hotHTML=
-    x.hot
-      ? `<div class="hot-badge">
-          激アツ
-         </div>`
-      : "";
-
-
-  const confidenceClass=
-    x.hot
-      ? "confidence-high"
-      : "confidence-normal";
-
-
   return `
 
-    <article class="race-card ${x.hot?"hot":""}">
+    <article class="race-card ${x.hot ? "hot" : ""}">
 
       <div class="race-head">
 
         <div>
 
-          ${hotHTML}
+          ${
+            x.hot
+              ? `<div class="hot-badge">
+                  激アツ
+                 </div>`
+              : ""
+          }
 
           <div class="race-name">
+
             ${esc(
-              STADIUMS[r.stadium_number]||
+              STADIUMS[r.stadium_number] ||
               "場"+r.stadium_number
             )}
+
             ${esc(r.race_number)}R
+
           </div>
 
-          <div class="race-meta">
 
-            <span class="grade">
+          <div>
+
+            <span class="grade-badge">
               ${esc(grade)}
             </span>
 
-            ${
-              day
-                ? `<span>${esc(day)}</span>`
-                : ""
+            ${day
+              ? `<span class="race-day">
+                  ${esc(day)}
+                 </span>`
+              : ""
             }
 
           </div>
 
-          <div class="series-name">
-            ${esc(title)}
-          </div>
 
           ${
-            subtitle
-              ? `<div class="muted">
-                  ${esc(subtitle)}
-                </div>`
+            r.title
+              ? `<div class="series-title">
+                  ${esc(r.title)}
+                 </div>`
               : ""
           }
+
+
+          ${
+            r.subtitle
+              ? `<div class="muted">
+                  ${esc(r.subtitle)}
+                 </div>`
+              : ""
+          }
+
 
           <span class="badge">
             締切 ${fmtTime(r.closed_at)}
@@ -953,8 +833,14 @@ function renderPick(x){
         </div>
 
 
-        <div class="${confidenceClass}">
-          信頼度 ${x.s}/100
+        <div class="${
+          x.hot
+            ? "confidence-hot"
+            : "confidence-normal"
+        }">
+
+          信頼度 ${x.score}/100
+
         </div>
 
       </div>
@@ -966,6 +852,7 @@ function renderPick(x){
           1着本命
         </div>
 
+
         <div class="pick-main">
           ① ${esc(x.one.name)}
         </div>
@@ -974,23 +861,33 @@ function renderPick(x){
         <div class="rows">
 
           <div class="metric">
+
             <b>本線</b>
+
             <span>
               ${esc(
-                cs.slice(0,2).join(" / ")
+                combos
+                  .slice(0,2)
+                  .join(" / ")
               )}
             </span>
+
           </div>
 
 
           <div class="metric">
+
             <b>押さえ</b>
+
             <span>
               ${esc(
-                cs.slice(2).join(" / ")||
+                combos
+                  .slice(2)
+                  .join(" / ") ||
                 "なし"
               )}
             </span>
+
           </div>
 
         </div>
@@ -999,10 +896,11 @@ function renderPick(x){
         <div class="reason">
 
           ${esc(
-            reasonText.join(" / ")
+            reasons.join(" / ")
           )}
 
         </div>
+
 
         ${changeHTML}
 
@@ -1015,6 +913,7 @@ function renderPick(x){
 
       </div>
 
+
     </article>
 
   `;
@@ -1022,33 +921,41 @@ function renderPick(x){
 
 
 /* =========================
-   データ取得
+   JSON取得
 ========================= */
 
-async function fetchTimeout(
-  url,
-  ms=15000
-){
+async function fetchData() {
 
-  const c=new AbortController();
+  const controller =
+    new AbortController();
 
-  const timer=
+  const timer =
     setTimeout(
-      ()=>c.abort(),
-      ms
+      ()=>controller.abort(),
+      20000
     );
 
-  try{
+  try {
 
-    return await fetch(
-      url,
-      {
-        cache:"no-store",
-        signal:c.signal
-      }
-    );
+    const response =
+      await fetch(
+        API,
+        {
+          cache:"no-store",
+          signal:controller.signal
+        }
+      );
 
-  }finally{
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+    }
+
+    return await response.json();
+
+  }
+  finally {
 
     clearTimeout(timer);
 
@@ -1057,66 +964,319 @@ async function fetchTimeout(
 
 
 /* =========================
+   的中履歴
+========================= */
+
+function loadHistory() {
+
+  try {
+
+    return JSON.parse(
+      localStorage.getItem(
+        "cyberResults"
+      ) || "[]"
+    );
+
+  }
+  catch (_) {
+
+    return [];
+
+  }
+}
+
+function saveHistory(history) {
+
+  localStorage.setItem(
+    "cyberResults",
+    JSON.stringify(history)
+  );
+
+}
+
+function saveResult(r) {
+
+  const trifecta =
+    r.result?.payouts?.trifecta?.[0];
+
+  if (!trifecta) {
+    return;
+  }
+
+  const key =
+    raceKey(r);
+
+  const predictions =
+    JSON.parse(
+      localStorage.getItem(
+        "cyberPredictions"
+      ) || "{}"
+    );
+
+  const prediction =
+    predictions[key];
+
+  if (!prediction) {
+    return;
+  }
+
+  const history =
+    loadHistory();
+
+  if (
+    history.some(
+      x=>x.key===key
+    )
+  ) {
+    return;
+  }
+
+  history.push({
+
+    key,
+
+    date:r.date,
+
+    month:r.date?.slice(0,7),
+
+    actual:
+      trifecta.combination,
+
+    prediction:
+      prediction.combos,
+
+    hit:
+      prediction.combos.includes(
+        trifecta.combination
+      )
+
+  });
+
+  saveHistory(history);
+}
+
+
+/* =========================
+   予想保存
+========================= */
+
+function savePrediction(x) {
+
+  const key =
+    raceKey(x.r);
+
+  let predictions = {};
+
+  try {
+
+    predictions =
+      JSON.parse(
+        localStorage.getItem(
+          "cyberPredictions"
+        ) || "{}"
+      );
+
+  }
+  catch (_) {}
+
+  predictions[key] = {
+
+    combos:makeCombos(x),
+
+    score:x.score,
+
+    hot:x.hot
+
+  };
+
+  localStorage.setItem(
+    "cyberPredictions",
+    JSON.stringify(predictions)
+  );
+}
+
+
+/* =========================
+   的中率
+========================= */
+
+function calcRate(list) {
+
+  if (!list.length) {
+    return "--";
+  }
+
+  const hits =
+    list.filter(x=>x.hit).length;
+
+  return Math.round(
+    hits/list.length*100
+  ) + "%";
+}
+
+function renderStats() {
+
+  const history =
+    loadHistory();
+
+  const today =
+    new Date()
+      .toLocaleDateString(
+        "ja-JP",
+        {
+          timeZone:"Asia/Tokyo"
+        }
+      )
+      .replaceAll("/","-");
+
+  const now =
+    new Date();
+
+  const month =
+    `${now.getFullYear()}-${
+      String(now.getMonth()+1)
+        .padStart(2,"0")
+    }`;
+
+
+  const todayList =
+    history.filter(
+      x=>x.date===today
+    );
+
+  const monthList =
+    history.filter(
+      x=>x.month===month
+    );
+
+
+  let box =
+    document.getElementById(
+      "cyberStats"
+    );
+
+
+  if (!box) {
+
+    box =
+      document.createElement(
+        "section"
+      );
+
+    box.id =
+      "cyberStats";
+
+    box.className =
+      "cyber-stats";
+
+    const status =
+      document.querySelector(
+        ".status-card"
+      );
+
+    if (status) {
+
+      status.insertAdjacentElement(
+        "afterend",
+        box
+      );
+
+    }
+
+  }
+
+
+  box.innerHTML = `
+
+    <div class="cyber-stat">
+
+      <div class="cyber-stat-label">
+        当日的中率
+      </div>
+
+      <div class="cyber-stat-value">
+        ${calcRate(todayList)}
+      </div>
+
+    </div>
+
+
+    <div class="cyber-stat">
+
+      <div class="cyber-stat-label">
+        今月の的中率
+      </div>
+
+      <div class="cyber-stat-value">
+        ${calcRate(monthList)}
+      </div>
+
+    </div>
+
+
+    <div class="cyber-stat">
+
+      <div class="cyber-stat-label">
+        全期間
+      </div>
+
+      <div class="cyber-stat-value">
+        ${calcRate(history)}
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+/* =========================
    メイン
 ========================= */
 
-async function load(){
+async function load() {
 
-  if(
-    !$("#status")||
+  if (
+    !$("#status") ||
     !$("#picks")
-  ){
+  ) {
     return;
   }
 
 
-  $("#status").textContent=
+  $("#status").textContent =
     "データ取得中…";
 
 
-  $("#notice")?.
-    classList.add("hidden");
+  try {
+
+    const data =
+      await fetchData();
 
 
-  try{
-
-    const res=
-      await fetchTimeout(API);
+    const races = [];
 
 
-    if(!res.ok){
-      throw new Error(
-        `API ${res.status}`
-      );
-    }
-
-
-    const data=
-      await res.json();
-
-
-    const races=[];
-
-
-    for(
+    for (
       const stadium of Object.values(
-        data.programs?.stadiums||{}
+        data.programs?.stadiums || {}
       )
-    ){
+    ) {
 
-      for(
+      for (
         const r of Object.values(
-          stadium.races||{}
+          stadium.races || {}
         )
-      ){
+      ) {
 
-        if(
+        if (
           r.result?.payouts
-        ){
+        ) {
 
           saveResult(r);
 
-        }else{
+        }
+        else {
 
           races.push(r);
 
@@ -1127,36 +1287,44 @@ async function load(){
     }
 
 
-    const scored=
+    /* 全レースを採点 */
+
+    const scored =
       races
         .map(scoreRace)
         .filter(Boolean);
 
 
-    const shown=
+    /* 推奨 */
+
+    const picks =
       scored
         .filter(x=>x.show)
         .sort(
           (a,b)=>
-            b.s-a.s||
-            new Date(a.r.closed_at)-
+            b.score-a.score ||
+            new Date(a.r.closed_at) -
             new Date(b.r.closed_at)
         );
 
 
-    shown.forEach(
+    /* 予想保存 */
+
+    picks.forEach(
       savePrediction
     );
 
 
-    $("#date").textContent=
-      races[0]?.date||
+    /* 日付 */
+
+    $("#date").textContent =
+      races[0]?.date ||
       new Date().toLocaleDateString(
         "ja-JP"
       );
 
 
-    $("#updated").textContent=
+    $("#updated").textContent =
       `更新 ${
         new Date().toLocaleTimeString(
           "ja-JP",
@@ -1168,39 +1336,51 @@ async function load(){
       }`;
 
 
-    $("#status").textContent=
-      shown.length
-        ? `${shown.length}レースを推奨`
-        : "本日は推奨なし";
+    /* 件数 */
 
+    if (picks.length) {
 
-    if(shown.length){
+      $("#status").textContent =
+        `${picks.length}レースを推奨`;
 
-      $("#picks").innerHTML=
-        shown
-          .map(renderPick)
+      $("#picks").innerHTML =
+        picks
+          .map(renderRace)
           .join("");
 
-    }else{
+    }
+    else {
 
-      $("#picks").innerHTML=`
+      $("#status").textContent =
+        "本日は現在、推奨レースなし";
+
+      $("#picks").innerHTML = `
 
         <div class="empty">
 
           <b>
-            本日は、現時点で推奨できる
-            「固いレース」はありません。
+            現時点では推奨レースなし
           </b>
 
-          <br>
+          <div class="no-data-box">
 
-          <span class="muted">
-            基準を満たさないレースは
-            無理に表示しません。
-          </span>
+            出走表データ：
+            ${scored.length}レース取得
 
-          <div class="update-note">
-            約3分ごとに自動更新します。
+            <br>
+
+            予想条件を満たすレース：
+            0レース
+
+            <br><br>
+
+            データが取得できていないのではなく、
+            現在の判定基準で推奨対象がない状態です。
+
+          </div>
+
+          <div class="debug-info">
+            約3分ごとに再評価します。
           </div>
 
         </div>
@@ -1213,28 +1393,47 @@ async function load(){
     renderStats();
 
 
-    localStorage.setItem(
-      "lastLoaded",
-      new Date().toISOString()
-    );
+    $("#notice")?.
+      classList.add("hidden");
 
 
-  }catch(e){
+  }
+  catch (error) {
 
-    console.error(e);
-
-
-    $("#status").textContent=
-      "取得できませんでした";
+    console.error(error);
 
 
-    $("#picks").innerHTML="";
+    $("#status").textContent =
+      "データ取得エラー";
 
 
-    if($("#notice")){
+    $("#picks").innerHTML = `
 
-      $("#notice").textContent=
-        "データ取得に失敗しました。時間を置いて「更新」を押してください。";
+      <div class="empty">
+
+        <b>
+          データを取得できませんでした
+        </b>
+
+        <div class="no-data-box">
+
+          APIとの通信に失敗しています。
+
+          <br><br>
+
+          「更新」を押して再試行してください。
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    if ($("#notice")) {
+
+      $("#notice").textContent =
+        "データ取得に失敗しました。";
 
       $("#notice")
         .classList
@@ -1248,47 +1447,12 @@ async function load(){
 
 
 /* =========================
-   タイトル変更
-========================= */
-
-function setupTitle(){
-
-  const h1=
-    document.querySelector("h1");
-
-  if(h1){
-
-    h1.textContent=
-      "予想屋サイバーはっちゃん";
-
-    h1.classList.add(
-      "cyber-title"
-    );
-
-  }
-
-  const desc=
-    document.querySelector(
-      ".eyebrow"
-    );
-
-  if(desc){
-
-    desc.textContent=
-      "BOAT RACE / CYBER HATCHAN";
-
-  }
-
-}
-
-
-/* =========================
    起動
 ========================= */
 
-injectStyle();
-
 setupTitle();
+
+setupStyle();
 
 $("#refresh")?.
   addEventListener(
@@ -1300,11 +1464,9 @@ load();
 
 
 /*
-  約3分ごとに更新。
-
-  API側も約3分間隔で更新されるため、
-  何も推奨レースがない場合も
-  次回更新時に再判定する。
+  Boatrace Open APIは
+  約3分間隔で更新されるため、
+  アプリ側も3分ごとに再取得。
 */
 
 setInterval(
