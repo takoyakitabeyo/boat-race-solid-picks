@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#08111f"
+  >
+
+  <title>購入済み - 予想屋サイバーはっちゃん</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: #08111f;
+    }
+
+    body {
+      margin: 0;
+      background: #08111f;
+      color: #e8eef5;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+      line-height: 1.5;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px 16px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin-bottom: 3px;
+      color: #66809a;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 23px;
+      font-weight: 900;
+    }
+
+    .back {
+      padding: 9px 12px;
+      border: 1px solid #27435f;
+      border-radius: 10px;
+      background: #10263d;
+      color: #dcecff;
+      text-decoration: none;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-bottom: 18px;
+    }
+
+    .summary-box {
+      padding: 12px 8px;
+      border: 1px solid #1b334d;
+      border-radius: 12px;
+      background: #0c1c2e;
+      text-align: center;
+    }
+
+    .summary-box b {
+      display: block;
+      color: #ffffff;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .summary-box span {
+      color: #687e94;
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .purchase-card {
+      padding: 14px;
+      margin-bottom: 11px;
+      border: 1px solid #1b334d;
+      border-radius: 14px;
+      background: #0c1c2e;
+    }
+
+    .purchase-card.hit {
+      border-color: #386b4e;
+    }
+
+    .purchase-card.miss {
+      border-color: #53333b;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .race-name {
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .race-sub {
+      margin-top: 2px;
+      color: #71869b;
+      font-size: 9px;
+    }
+
+    .result-badge {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border-radius: 7px;
+      background: #182b3d;
+      color: #91a5b8;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .result-badge.hit {
+      background: #173c2a;
+      color: #91ddb0;
+    }
+
+    .result-badge.miss {
+      background: #3b2028;
+      color: #e29ba8;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .detail {
+      padding: 8px;
+      border-radius: 8px;
+      background: #091725;
+    }
+
+    .detail span {
+      display: block;
+      margin-bottom: 1px;
+      color: #5f758b;
+      font-size: 8px;
+    }
+
+    .detail b {
+      color: #b9c8d6;
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .bets {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #172d43;
+    }
+
+    .bets-label {
+      margin-bottom: 6px;
+      color: #647b91;
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .bet-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .bet {
+      padding: 6px 9px;
+      border: 1px solid #244c6e;
+      border-radius: 7px;
+      background: #123552;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .actual-result {
+      margin-top: 9px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #101f2e;
+      color: #aabaca;
+      font-size: 9px;
+    }
+
+    .delete-area {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 9px;
+    }
+
+    .delete-button {
+      padding: 6px 9px;
+      border: 1px solid #49323a;
+      border-radius: 7px;
+      background: transparent;
+      color: #9b717b;
+      font-size: 8px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .empty {
+      padding: 35px 15px;
+      border: 1px solid #1b334d;
+      border-radius: 14px;
+      background: #0c1c2e;
+      text-align: center;
+    }
+
+    .empty-title {
+      color: #d8e2eb;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .empty-text {
+      margin-top: 5px;
+      color: #71869d;
+      font-size: 10px;
+    }
+
+    .clear-all {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+      border: 1px solid #49323a;
+      border-radius: 9px;
+      background: transparent;
+      color: #9b717b;
+      font-size: 9px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    footer {
+      padding-top: 20px;
+      color: #4f6479;
+      font-size: 8px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+
+      .app {
+        padding: 15px 13px 35px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .summary-box b {
+        font-size: 18px;
+      }
+
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+  <main class="app">
+
+    <header class="topbar">
+
+      <div>
+
+        <div class="eyebrow">
+          BOAT RACE / PURCHASED
+        </div>
+
+        <h1>
+          購入済みレース
+        </h1>
+
+      </div>
+
+      <a
+        href="index.html"
+        class="back"
+      >
+        ← 予想一覧
+      </a>
+
+    </header>
+
+
+    <section class="summary">
+
+      <div class="summary-box">
+        <b id="total-count">0</b>
+        <span>購入レース</span>
+      </div>
+
+      <div class="summary-box">
+        <b id="settled-count">0</b>
+        <span>結果確定</span>
+      </div>
+
+      <div class="summary-box">
+        <b id="hit-rate">-</b>
+        <span>的中率</span>
+      </div>
+
+    </section>
+
+
+    <section id="purchase-list">
+
+      <div class="empty">
+
+        <div class="empty-title">
+          購入履歴を読み込んでいます
+        </div>
+
+        <div class="empty-text">
+          少々お待ちください
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <button
+      id="clear-all"
+      class="clear-all"
+      type="button"
+    >
+      購入履歴をすべて削除
+    </button>
+
+
+    <footer>
+      このページは「買った」ボタンを押した履歴を表示します。
+    </footer>
+
+  </main>
+
+
+  <script src="app.js?v=20260902-2"></script>
+
+</body>
+
+</html>
