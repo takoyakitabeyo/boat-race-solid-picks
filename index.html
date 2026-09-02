@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -15,20 +17,608 @@
 
   <meta
     name="description"
-    content="予想屋サイバーはっちゃん"
+    content="競艇の固いレースを分析する個人用予想アプリ"
   >
 
   <title>予想屋サイバーはっちゃん</title>
 
-  <link rel="stylesheet" href="styles.css?v=20260902">
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: #071426;
+    }
+
+    body {
+      margin: 0;
+      background: #071426;
+      color: #f5f7fb;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        sans-serif;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 20px 50px;
+    }
+
+
+    /* ヘッダー */
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      color: #42a5ff;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.2;
+      letter-spacing: -1px;
+    }
+
+    .muted {
+      color: #94a4ba;
+    }
+
+    #date {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .refresh {
+      flex-shrink: 0;
+      min-width: 96px;
+      padding: 14px 18px;
+      border: 1px solid #1768a8;
+      border-radius: 18px;
+      background: #0c2944;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .refresh:active {
+      transform: scale(.97);
+    }
+
+
+    /* 判定状況 */
+
+    .status-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+
+      padding: 22px 24px;
+      margin-bottom: 22px;
+
+      border: 1px solid #203b59;
+      border-radius: 24px;
+
+      background: #0d2035;
+    }
+
+    .status-title {
+      color: #94a4ba;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    #status {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    #updated {
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+
+    /* 統計 */
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .stats > div {
+      padding: 15px;
+      border: 1px solid #203b59;
+      border-radius: 16px;
+      background: #0d2035;
+      text-align: center;
+    }
+
+    .stats span {
+      display: block;
+      color: #94a4ba;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .stats b {
+      font-size: 22px;
+    }
+
+
+    /* レースカード */
+
+    .race-card {
+      margin-bottom: 18px;
+      padding: 20px;
+
+      border: 1px solid #203b59;
+      border-radius: 24px;
+
+      background: #0d2035;
+    }
+
+    .race-card.hot {
+      border: 2px solid #f5b942;
+      background: #14283c;
+    }
+
+    .race-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .race-title {
+      font-size: 23px;
+      font-weight: 800;
+    }
+
+    .grade {
+      display: inline-block;
+      margin-left: 7px;
+      padding: 4px 8px;
+
+      border-radius: 7px;
+
+      background: #233b56;
+      color: #c9d8e8;
+
+      font-size: 11px;
+      vertical-align: middle;
+    }
+
+    .event-title {
+      margin-top: 7px;
+      color: #d9e3ef;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: #8195ad;
+      font-size: 12px;
+    }
+
+    .deadline {
+      margin-top: 8px;
+      color: #8da1b7;
+      font-size: 13px;
+    }
+
+
+    /* 信頼度 */
+
+    .confidence {
+      min-width: 85px;
+      text-align: center;
+    }
+
+    .confidence strong {
+      display: block;
+      font-size: 31px;
+      line-height: 1;
+    }
+
+    .confidence small {
+      color: #8da1b7;
+      font-size: 11px;
+    }
+
+    .level {
+      margin-bottom: 8px;
+      padding: 5px 7px;
+
+      border-radius: 8px;
+
+      background: #183a5c;
+      color: #71bcff;
+
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .hot-level {
+      background: #614713;
+      color: #ffd66b;
+    }
+
+
+    /* 本命 */
+
+    .main-pick {
+      margin-top: 18px;
+      padding: 18px;
+
+      border-radius: 17px;
+
+      background: #08192b;
+    }
+
+    .pick-label {
+      color: #7fa1c4;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .pick-name {
+      margin-top: 6px;
+      font-size: 23px;
+      font-weight: 900;
+    }
+
+    .pick-reason {
+      margin-top: 10px;
+      color: #a7b8cb;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+
+    /* 買い目 */
+
+    .bets {
+      margin-top: 15px;
+    }
+
+    .bets-title {
+      margin-bottom: 9px;
+      color: #8da1b7;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .bet-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .bet {
+      display: inline-block;
+      padding: 9px 12px;
+
+      border-radius: 10px;
+
+      background: #173d60;
+      color: #fff;
+
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
+
+
+    /* 2・3着 */
+
+    .place {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+
+      margin-top: 15px;
+    }
+
+    .place > div {
+      padding: 12px;
+
+      border-radius: 12px;
+
+      background: #102a43;
+
+      color: #c1cfde;
+      font-size: 13px;
+    }
+
+    .place b {
+      display: block;
+      margin-bottom: 4px;
+      color: #7894b1;
+      font-size: 11px;
+    }
+
+
+    /* 予想変更 */
+
+    .change {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      margin-top: 15px;
+      padding: 13px;
+
+      border-left: 3px solid #42a5ff;
+      border-radius: 5px;
+
+      background: #102a43;
+
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .change b {
+      color: #55b0ff;
+    }
+
+    .change span {
+      color: #bdcddd;
+    }
+
+
+    /* 出走選手 */
+
+    .racers {
+      display: grid;
+      gap: 6px;
+      margin-top: 17px;
+    }
+
+    .racer {
+      display: grid;
+      grid-template-columns: 34px 1fr 50px;
+      align-items: center;
+      gap: 8px;
+
+      padding: 9px 10px;
+
+      border-radius: 10px;
+
+      background: #10263d;
+    }
+
+    .racer-no {
+      font-size: 17px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .racer-info b {
+      display: block;
+      font-size: 13px;
+    }
+
+    .racer-info span {
+      display: block;
+      margin-top: 2px;
+      color: #8095ac;
+      font-size: 10px;
+    }
+
+    .racer-time {
+      color: #9fb5cc;
+      font-size: 13px;
+      text-align: right;
+    }
+
+
+    /* 推奨なし・読み込み */
+
+    .empty,
+    .loading {
+      padding: 55px 24px;
+
+      border: 1px solid #203b59;
+      border-radius: 24px;
+
+      background: #0d2035;
+
+      text-align: center;
+    }
+
+    .empty-title {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+
+    .empty-text {
+      margin-top: 18px;
+      color: #a0b0c2;
+      font-size: 14px;
+      line-height: 2;
+    }
+
+    .empty-refresh {
+      margin-top: 22px;
+      padding: 12px 20px;
+
+      border: 1px solid #1768a8;
+      border-radius: 12px;
+
+      background: #123452;
+      color: white;
+
+      font-weight: 700;
+    }
+
+    .loading {
+      color: #9fb1c5;
+    }
+
+
+    /* 基準 */
+
+    .rules {
+      margin-top: 22px;
+      padding: 24px;
+
+      border: 1px solid #203b59;
+      border-radius: 22px;
+
+      background: #0b1b2e;
+    }
+
+    .rules h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .rules ul {
+      margin: 0;
+      padding-left: 21px;
+    }
+
+    .rules li {
+      margin: 8px 0;
+      color: #9aabc0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+
+    /* フッター */
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+
+      margin-top: 25px;
+
+      color: #62758c;
+
+      font-size: 11px;
+    }
+
+
+    /* スマホ */
+
+    @media (max-width: 600px) {
+
+      .app {
+        padding: 20px 14px 40px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .refresh {
+        min-width: 82px;
+        padding: 12px 13px;
+      }
+
+      .status-card {
+        padding: 18px;
+      }
+
+      #status {
+        font-size: 18px;
+      }
+
+      #updated {
+        font-size: 11px;
+      }
+
+      .race-card {
+        padding: 16px;
+        border-radius: 20px;
+      }
+
+      .race-title {
+        font-size: 20px;
+      }
+
+      .confidence {
+        min-width: 72px;
+      }
+
+      .confidence strong {
+        font-size: 27px;
+      }
+
+      .pick-name {
+        font-size: 20px;
+      }
+
+      .place {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        gap: 7px;
+      }
+
+      .stats > div {
+        padding: 12px 5px;
+      }
+
+      .stats b {
+        font-size: 19px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+
+    }
+
+  </style>
+
 </head>
+
 
 <body>
 
   <main class="app">
 
+
     <header class="topbar">
+
       <div>
+
         <div class="eyebrow">
           BOAT RACE / PERSONAL
         </div>
@@ -37,21 +627,28 @@
           予想屋サイバーはっちゃん
         </h1>
 
-        <div id="date" class="muted"></div>
+        <div
+          id="date"
+          class="muted">
+          読み込み中…
+        </div>
+
       </div>
+
 
       <button
         id="refresh"
-        class="refresh"
-        type="button"
-      >
+        class="refresh">
         更新
       </button>
+
     </header>
 
 
     <section class="status-card">
+
       <div>
+
         <div class="status-title">
           判定状況
         </div>
@@ -59,16 +656,19 @@
         <div id="status">
           データ取得中…
         </div>
+
       </div>
 
-      <div id="updated" class="muted"></div>
+
+      <div
+        id="updated"
+        class="muted">
+      </div>
+
     </section>
 
 
-    <section
-      id="notice"
-      class="notice hidden"
-    ></section>
+    <section id="notice"></section>
 
 
     <section id="picks"></section>
@@ -76,26 +676,47 @@
 
     <section class="rules">
 
-      <h2>このアプリの基準</h2>
+      <h2>
+        このアプリの基準
+      </h2>
 
       <ul>
-        <li>推奨できるレースだけを表示します。</li>
 
-        <li>自信度の高い順に表示します。</li>
+        <li>
+          実際のBOAT RACEデータだけを使用します。
+        </li>
 
-        <li>展示タイム・進入・STなどの直前情報を考慮します。</li>
+        <li>
+          自信度の高い順にレースを表示します。
+        </li>
 
-        <li>予想に変更があった場合は理由を表示します。</li>
+        <li>
+          「激アツ」「本命」「有力」の3段階で評価します。
+        </li>
 
-        <li>特に自信の高いレースは「激アツ」として表示します。</li>
+        <li>
+          1着候補だけでなく、2・3着候補も評価します。
+        </li>
 
-        <li>結果を取得できたレースは的中率の集計に使用します。</li>
+        <li>
+          展示タイム・進入・展示STなどの直前情報を反映します。
+        </li>
+
+        <li>
+          更新で予想が変わった場合は変更理由を表示します。
+        </li>
+
+        <li>
+          結果を取得できたレースは的中率の集計に使用します。
+        </li>
+
       </ul>
 
     </section>
 
 
     <footer>
+
       <span>
         データ：Boatrace Open API
       </span>
@@ -103,12 +724,19 @@
       <span>
         このアプリは投票を行いません
       </span>
+
     </footer>
+
 
   </main>
 
 
+  <!--
+    キャッシュ対策のためバージョン番号を付けています
+  -->
+
   <script src="app.js?v=20260902"></script>
 
 </body>
+
 </html>
