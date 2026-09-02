@@ -244,6 +244,12 @@
       font-weight: 900;
     }
 
+    .bet.hit-bet {
+      border-color: #3e8d5e;
+      background: #173c2a;
+      color: #a8efc0;
+    }
+
     .actual-result {
       margin-top: 9px;
       padding: 8px;
@@ -251,6 +257,16 @@
       background: #101f2e;
       color: #aabaca;
       font-size: 9px;
+    }
+
+    .payout {
+      margin-top: 7px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #173c2a;
+      color: #a8efc0;
+      font-size: 10px;
+      font-weight: 900;
     }
 
     .empty {
@@ -438,21 +454,67 @@
 
   <script>
 
-    const PURCHASED_KEY =
-      "cyber-hacchan-purchased-v2";
+    const PURCHASED_KEY = "cyber-hacchan-purchased-v2";
+    const RESULTS_KEY = "boatResults";
+    const API =
+      "https://boatraceopenapi.github.io/api/v1/today.json";
+
+    const STADIUMS = {
+      1:"桐生",
+      2:"戸田",
+      3:"江戸川",
+      4:"平和島",
+      5:"多摩川",
+      6:"浜名湖",
+      7:"蒲郡",
+      8:"常滑",
+      9:"津",
+      10:"三国",
+      11:"びわこ",
+      12:"住之江",
+      13:"尼崎",
+      14:"鳴門",
+      15:"丸亀",
+      16:"児島",
+      17:"宮島",
+      18:"徳山",
+      19:"下関",
+      20:"若松",
+      21:"芦屋",
+      22:"福岡",
+      23:"唐津",
+      24:"大村"
+    };
 
     let selectedPeriod = "all";
 
     function getPurchasedPageData() {
       try {
         return JSON.parse(
-          localStorage.getItem(
-            PURCHASED_KEY
-          ) || "{}"
+          localStorage.getItem(PURCHASED_KEY) || "{}"
         );
       } catch {
         return {};
       }
+    }
+
+    function getResultsData() {
+      try {
+        return JSON.parse(
+          localStorage.getItem(RESULTS_KEY) || "{}"
+        );
+      } catch {
+        return {};
+      }
+    }
+
+    function saveResultsData(data) {
+      try {
+        localStorage.setItem(
+          RESULTS_KEY,
+          JSON.stringify(data)
+        );
+      } catch {}
     }
 
     function escapePageHtml(value) {
@@ -465,6 +527,7 @@
     }
 
     function getRaceDate(item) {
+
       if (item.date) {
         return String(item.date).slice(0, 10);
       }
@@ -476,9 +539,20 @@
       }
 
       if (item.purchasedAt) {
-        return new Date(
-          item.purchasedAt
-        )
+
+        const n = Number(item.purchasedAt);
+
+        if (Number.isFinite(n)) {
+          return new Date(n)
+            .toLocaleDateString(
+              "sv-SE",
+              {
+                timeZone: "Asia/Tokyo"
+              }
+            );
+        }
+
+        return new Date(item.purchasedAt)
           .toLocaleDateString(
             "sv-SE",
             {
@@ -490,7 +564,37 @@
       return "";
     }
 
+    function getRaceKey(item) {
+
+      const date = getRaceDate(item);
+
+      const stadium =
+        item.stadiumNo ??
+        item.stadium_number ??
+        "";
+
+      const race =
+        item.raceNo ??
+        item.race_number ??
+        "";
+
+      if (
+        date &&
+        stadium !== "" &&
+        race !== ""
+      ) {
+        return `${date}-${stadium}-${race}`;
+      }
+
+      if (item.key) {
+        return String(item.key);
+      }
+
+      return "";
+    }
+
     function isToday(item) {
+
       const today =
         new Date()
           .toLocaleDateString(
@@ -500,13 +604,11 @@
             }
           );
 
-      return (
-        getRaceDate(item) ===
-        today
-      );
+      return getRaceDate(item) === today;
     }
 
     function isThisMonth(item) {
+
       const today =
         new Date()
           .toLocaleDateString(
@@ -523,47 +625,375 @@
     }
 
     function filterItems(items) {
+
       if (selectedPeriod === "today") {
-        return items.filter(
-          isToday
-        );
+        return items.filter(isToday);
       }
 
       if (selectedPeriod === "month") {
-        return items.filter(
-          isThisMonth
-        );
+        return items.filter(isThisMonth);
       }
 
       return items;
     }
 
+    function normalizeCombination(value) {
+
+      if (value == null) {
+        return "";
+      }
+
+      if (Array.isArray(value)) {
+        return value.join("-");
+      }
+
+      const s = String(value)
+        .trim()
+        .replace(/[①②③④⑤⑥]/g, "")
+        .replace(/[ー－–—]/g, "-")
+        .replace(/\s+/g, "");
+
+      const nums =
+        s.match(/[1-6]/g);
+
+      if (nums && nums.length >= 3) {
+        return nums.slice(0, 3).join("-");
+      }
+
+      return s;
+    }
+
+    function resultFromApi(r) {
+
+      if (!r || !r.result) {
+        return null;
+      }
+
+      const racers =
+        r.result.racers;
+
+      if (racers) {
+
+        const places =
+          Object.entries(racers)
+            .map(([entry, data]) => ({
+              entry: Number(entry),
+              place: Number(data?.place_number)
+            }))
+            .filter(x =>
+              Number.isFinite(x.entry) &&
+              Number.isFinite(x.place)
+            )
+            .sort((a, b) =>
+              a.place - b.place
+            );
+
+        if (places.length >= 3) {
+
+          return {
+            combination:
+              places
+                .slice(0, 3)
+                .map(x => x.entry)
+                .join("-"),
+            payout:
+              getTrifectaPayout(
+                r.result.payouts
+              )
+          };
+        }
+      }
+
+      return null;
+    }
+
+    function getTrifectaPayout(payouts) {
+
+      if (!payouts) {
+        return null;
+      }
+
+      let trifecta =
+        payouts.trifecta;
+
+      if (Array.isArray(trifecta)) {
+
+        const first =
+          trifecta[0];
+
+        return first?.amount ??
+          first?.payout ??
+          null;
+      }
+
+      if (trifecta) {
+
+        return trifecta.amount ??
+          trifecta.payout ??
+          null;
+      }
+
+      return null;
+    }
+
+    function getStoredResult(item) {
+
+      const results =
+        getResultsData();
+
+      const key =
+        getRaceKey(item);
+
+      if (key && results[key]) {
+        return results[key];
+      }
+
+      /*
+       * 以前のバージョンで
+       * 日付なしキーを使っていた場合にも対応
+       */
+      const stadium =
+        item.stadiumNo ??
+        item.stadium_number ??
+        "";
+
+      const race =
+        item.raceNo ??
+        item.race_number ??
+        "";
+
+      const oldKey =
+        `${stadium}-${race}`;
+
+      if (results[oldKey]) {
+        return results[oldKey];
+      }
+
+      return null;
+    }
+
+    function applyResultToItem(item, stored) {
+
+      if (!stored) {
+        return item;
+      }
+
+      const actual =
+        normalizeCombination(
+          stored.combination
+        );
+
+      if (!actual) {
+        return item;
+      }
+
+      const bets =
+        Array.isArray(item.bets)
+          ? item.bets
+          : [];
+
+      const normalizedBets =
+        bets.map(normalizeCombination);
+
+      item.result =
+        actual.split("-").map(Number);
+
+      item.hit =
+        normalizedBets.includes(actual);
+
+      if (
+        stored.amount != null &&
+        stored.payout == null
+      ) {
+        stored.payout = stored.amount;
+      }
+
+      item.payout =
+        stored.payout ??
+        stored.amount ??
+        item.payout ??
+        null;
+
+      item.resultUpdatedAt =
+        stored.at ||
+        new Date().toISOString();
+
+      return item;
+    }
+
+    async function fetchTodayResults() {
+
+      try {
+
+        const response =
+          await fetch(
+            `${API}?t=${Date.now()}`,
+            {
+              cache: "no-store"
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            `API ${response.status}`
+          );
+        }
+
+        const data =
+          await response.json();
+
+        const results =
+          getResultsData();
+
+        for (
+          const stadium
+          of Object.values(
+            data.programs?.stadiums || {}
+          )
+        ) {
+
+          for (
+            const r
+            of Object.values(
+              stadium.races || {}
+            )
+          ) {
+
+            const result =
+              resultFromApi(r);
+
+            if (!result) {
+              continue;
+            }
+
+            const key =
+              `${r.date}-${r.stadium_number}-${r.race_number}`;
+
+            results[key] = {
+              combination:
+                result.combination,
+              payout:
+                result.payout,
+              at:
+                new Date().toISOString()
+            };
+          }
+        }
+
+        saveResultsData(results);
+
+      } catch (error) {
+
+        console.warn(
+          "結果取得失敗:",
+          error
+        );
+
+      }
+    }
+
+    function syncPurchasedResults() {
+
+      const data =
+        getPurchasedPageData();
+
+      const results =
+        getResultsData();
+
+      let changed = false;
+
+      Object.values(data)
+        .forEach(item => {
+
+          const key =
+            getRaceKey(item);
+
+          let stored =
+            key
+              ? results[key]
+              : null;
+
+          if (!stored) {
+
+            const stadium =
+              item.stadiumNo ??
+              item.stadium_number ??
+              "";
+
+            const race =
+              item.raceNo ??
+              item.race_number ??
+              "";
+
+            stored =
+              results[
+                `${stadium}-${race}`
+              ];
+          }
+
+          if (!stored) {
+            return;
+          }
+
+          const before =
+            JSON.stringify({
+              result: item.result,
+              hit: item.hit,
+              payout: item.payout
+            });
+
+          applyResultToItem(
+            item,
+            stored
+          );
+
+          const after =
+            JSON.stringify({
+              result: item.result,
+              hit: item.hit,
+              payout: item.payout
+            });
+
+          if (before !== after) {
+            changed = true;
+          }
+
+        });
+
+      if (changed) {
+
+        localStorage.setItem(
+          PURCHASED_KEY,
+          JSON.stringify(data)
+        );
+      }
+
+      return data;
+    }
+
     function renderSummary(items) {
+
       const total =
         items.length;
 
       const settled =
         items.filter(
-          (item) =>
-            Array.isArray(
-              item.result
-            ) &&
+          item =>
+            Array.isArray(item.result) &&
             item.result.length >= 3 &&
-            typeof item.hit ===
-              "boolean"
+            typeof item.hit === "boolean"
         ).length;
 
       const hits =
         items.filter(
-          (item) =>
+          item =>
             item.hit === true
         ).length;
 
       const rate =
         settled > 0
           ? `${(
-              (hits / settled) *
-              100
+              hits / settled * 100
             ).toFixed(1)}%`
           : "-";
 
@@ -585,13 +1015,11 @@
     }
 
     function renderPurchase(item) {
+
       const resultReady =
-        Array.isArray(
-          item.result
-        ) &&
+        Array.isArray(item.result) &&
         item.result.length >= 3 &&
-        typeof item.hit ===
-          "boolean";
+        typeof item.hit === "boolean";
 
       const cardClass =
         resultReady
@@ -624,18 +1052,64 @@
           ? item.bets
           : [];
 
+      const actual =
+        resultReady
+          ? normalizeCombination(
+              item.result
+            )
+          : "";
+
       const betsHtml =
         bets
-          .map(
-            (bet) => `
-              <div class="bet">
-                ${escapePageHtml(
-                  bet
-                )}
+          .map(bet => {
+
+            const normalized =
+              normalizeCombination(
+                bet
+              );
+
+            const isHitBet =
+              resultReady &&
+              item.hit === true &&
+              normalized === actual;
+
+            return `
+              <div class="bet ${
+                isHitBet
+                  ? "hit-bet"
+                  : ""
+              }">
+                ${escapePageHtml(bet)}
               </div>
-            `
-          )
+            `;
+
+          })
           .join("");
+
+      const payout =
+        item.payout != null
+          ? `
+            <div class="payout">
+              払戻金：
+              ${Number(
+                item.payout
+              ).toLocaleString("ja-JP")}円
+            </div>
+          `
+          : "";
+
+      const stadiumName =
+        item.stadiumName ||
+        STADIUMS[
+          item.stadiumNo ??
+          item.stadium_number
+        ] ||
+        "";
+
+      const raceNo =
+        item.raceNo ??
+        item.race_number ??
+        "";
 
       return `
         <article
@@ -648,17 +1122,19 @@
 
               <div class="race-name">
                 ${escapePageHtml(
-                  item.stadiumName ||
-                  ""
+                  stadiumName
                 )}
-                ${item.raceNo || ""}R
+                ${escapePageHtml(
+                  raceNo
+                )}R
               </div>
 
               <div class="race-sub">
+
                 ${escapePageHtml(
-                  item.grade ||
-                  ""
+                  item.grade || ""
                 )}
+
                 ${
                   item.title
                     ? ` / ${escapePageHtml(
@@ -666,6 +1142,7 @@
                       )}`
                     : ""
                 }
+
               </div>
 
             </div>
@@ -681,9 +1158,13 @@
           <div class="details">
 
             <div class="detail">
+
               <span>本命</span>
+
               <b>
+
                 ${item.mainNo || "-"}号艇
+
                 ${
                   item.mainName
                     ? escapePageHtml(
@@ -691,28 +1172,39 @@
                       )
                     : ""
                 }
+
               </b>
+
             </div>
 
             <div class="detail">
+
               <span>自信度</span>
+
               <b>
                 ${item.confidence || "-"}
               </b>
+
             </div>
 
             <div class="detail">
+
               <span>購入日</span>
+
               <b>
                 ${getRaceDate(item) || "-"}
               </b>
+
             </div>
 
             <div class="detail">
+
               <span>買い目点数</span>
+
               <b>
                 ${bets.length}点
               </b>
+
             </div>
 
           </div>
@@ -730,21 +1222,32 @@
           </div>
 
           <div class="actual-result">
+
             ${
               resultReady
-                ? `実際の結果：<b>${escapePageHtml(
-                    resultText
-                  )}</b>`
+                ? `
+                  実際の結果：
+                  <b>
+                    ${escapePageHtml(
+                      resultText
+                    )}
+                  </b>
+                `
                 : resultText
             }
+
           </div>
+
+          ${payout}
 
           <div class="delete-area">
 
             <button
               class="delete-button"
               data-delete="${
-                item.key
+                escapePageHtml(
+                  item.key || ""
+                )
               }"
               type="button"
             >
@@ -758,8 +1261,9 @@
     }
 
     function renderPurchasedPage() {
+
       const data =
-        getPurchasedPageData();
+        syncPurchasedResults();
 
       const items =
         Object.values(data)
@@ -802,9 +1306,7 @@
 
         list.innerHTML =
           filtered
-            .map(
-              renderPurchase
-            )
+            .map(renderPurchase)
             .join("");
 
       }
@@ -813,21 +1315,30 @@
     }
 
     function safeTime(value) {
+
       const n =
         Number(value);
 
-      return Number.isFinite(n)
-        ? n
+      if (Number.isFinite(n)) {
+        return n;
+      }
+
+      const d =
+        Date.parse(value);
+
+      return Number.isFinite(d)
+        ? d
         : 0;
     }
 
     function bindDeleteButtons() {
+
       document
         .querySelectorAll(
           "[data-delete]"
         )
         .forEach(
-          (button) => {
+          button => {
 
             button.addEventListener(
               "click",
@@ -843,12 +1354,11 @@
 
                 localStorage.setItem(
                   PURCHASED_KEY,
-                  JSON.stringify(
-                    data
-                  )
+                  JSON.stringify(data)
                 );
 
                 renderPurchasedPage();
+
               }
             );
 
@@ -861,7 +1371,7 @@
         ".period-tab"
       )
       .forEach(
-        (button) => {
+        button => {
 
           button.addEventListener(
             "click",
@@ -875,7 +1385,7 @@
                   ".period-tab"
                 )
                 .forEach(
-                  (b) =>
+                  b =>
                     b.classList.toggle(
                       "active",
                       b === button
@@ -883,6 +1393,7 @@
                 );
 
               renderPurchasedPage();
+
             }
           );
 
@@ -901,8 +1412,7 @@
             getPurchasedPageData();
 
           if (
-            !Object.keys(data)
-              .length
+            !Object.keys(data).length
           ) {
             return;
           }
@@ -920,14 +1430,44 @@
           );
 
           renderPurchasedPage();
+
         }
       );
 
-    renderPurchasedPage();
+    async function initialize() {
+
+      /*
+       * まず保存済み結果を即座に反映
+       */
+      renderPurchasedPage();
+
+      /*
+       * さらにAPIから最新結果を取得
+       * → 保存
+       * → 購入履歴へ反映
+       */
+      await fetchTodayResults();
+
+      renderPurchasedPage();
+    }
+
+    initialize();
+
+    /*
+     * 3分ごとに結果を再確認
+     */
+    setInterval(
+      async () => {
+
+        await fetchTodayResults();
+
+        renderPurchasedPage();
+
+      },
+      180000
+    );
 
   </script>
-
-  <script src="app.js?v=20260902-4"></script>
 
 </body>
 
