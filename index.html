@@ -53,10 +53,7 @@
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding:
-        18px
-        16px
-        40px;
+      padding: 18px 16px 40px;
     }
 
 
@@ -68,31 +65,23 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-
-      gap: 12px;
-
+      gap: 10px;
       margin-bottom: 16px;
     }
 
     .eyebrow {
       margin-bottom: 3px;
-
       color: #66809a;
-
       font-size: 9px;
       font-weight: 800;
-
       letter-spacing: 1.5px;
     }
 
     h1 {
       margin: 0;
-
       color: #ffffff;
-
       font-size: 24px;
       font-weight: 900;
-
       letter-spacing: -0.5px;
     }
 
@@ -101,26 +90,34 @@
       font-size: 10px;
     }
 
-    .refresh {
+    .header-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       flex: 0 0 auto;
-
-      padding: 9px 15px;
-
-      border: 1px solid #27435f;
-      border-radius: 10px;
-
-      background: #10263d;
-
-      color: #dcecff;
-
-      font-size: 12px;
-      font-weight: 800;
-
-      cursor: pointer;
     }
 
-    .refresh:active {
+    .refresh,
+    .purchase-link {
+      padding: 9px 12px;
+      border: 1px solid #27435f;
+      border-radius: 10px;
+      background: #10263d;
+      color: #dcecff;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .refresh:active,
+    .purchase-link:active {
       transform: scale(.97);
+    }
+
+    .purchase-link {
+      background: #142c43;
     }
 
 
@@ -130,36 +127,49 @@
 
     .status-card {
       display: flex;
-
       justify-content: space-between;
       align-items: center;
-
       gap: 10px;
-
       padding: 13px 14px;
-
       margin-bottom: 15px;
-
       border: 1px solid #1b334d;
       border-radius: 13px;
-
       background: #0c1c2e;
     }
 
     .status-title {
       margin-bottom: 2px;
-
       color: #71869d;
-
       font-size: 9px;
       font-weight: 800;
     }
 
     #status {
       color: #ffffff;
-
       font-size: 13px;
       font-weight: 800;
+    }
+
+
+    /* =========================
+       分析情報
+    ========================= */
+
+    .analysis-info {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .info-chip {
+      padding: 6px 9px;
+      border: 1px solid #19334c;
+      border-radius: 8px;
+      background: #0b1a2b;
+      color: #71869d;
+      font-size: 9px;
+      font-weight: 700;
     }
 
 
@@ -169,11 +179,8 @@
 
     .loading {
       padding: 30px 10px;
-
       color: #71869d;
-
       text-align: center;
-
       font-size: 12px;
     }
 
@@ -188,41 +195,31 @@
 
     .section-title {
       display: flex;
-
       justify-content: space-between;
       align-items: center;
-
       padding: 0 3px;
-
       margin-bottom: 9px;
     }
 
     .section-title span {
       color: #ffd75a;
-
       font-size: 18px;
       font-weight: 900;
     }
 
     .section-title small {
       color: #71869d;
-
       font-size: 10px;
       font-weight: 700;
     }
 
     .no-hot {
       padding: 17px;
-
       border: 1px solid #1b334d;
       border-radius: 13px;
-
       background: #0c1c2e;
-
       color: #71869d;
-
       text-align: center;
-
       font-size: 11px;
     }
 
@@ -233,14 +230,8 @@
 
     .normal-title {
       padding: 0 3px;
-
-      margin:
-        0
-        0
-        9px;
-
+      margin: 0 0 9px;
       color: #8ea1b5;
-
       font-size: 12px;
       font-weight: 900;
     }
@@ -252,20 +243,11 @@
 
     .stadium-tabs {
       display: flex;
-
       gap: 7px;
-
       overflow-x: auto;
-
-      padding:
-        2px
-        2px
-        10px;
-
+      padding: 2px 2px 10px;
       margin-bottom: 9px;
-
       scrollbar-width: none;
-
       -webkit-overflow-scrolling: touch;
     }
 
@@ -275,46 +257,33 @@
 
     .stadium-tab {
       flex: 0 0 auto;
-
       min-width: 76px;
-
       padding: 8px 10px;
-
       border: 1px solid #1e3953;
       border-radius: 11px;
-
       background: #0c1d30;
-
       color: #8da1b5;
-
       text-align: center;
-
       cursor: pointer;
     }
 
     .stadium-tab span {
       display: block;
-
       font-size: 12px;
       font-weight: 900;
     }
 
     .stadium-tab small {
       display: block;
-
       margin-top: 1px;
-
       color: #60758b;
-
       font-size: 9px;
       font-weight: 700;
     }
 
     .stadium-tab.active {
       border-color: #2b83bf;
-
       background: #123a5a;
-
       color: #ffffff;
     }
 
@@ -329,20 +298,15 @@
 
     .race-card {
       padding: 15px;
-
       margin-bottom: 12px;
-
       border: 1px solid #1b334d;
       border-radius: 15px;
-
       background: #0c1c2e;
-
       overflow: hidden;
     }
 
     .race-card.hot {
       border-color: #705d22;
-
       background:
         linear-gradient(
           145deg,
@@ -353,69 +317,49 @@
 
     .race-top {
       display: flex;
-
       justify-content: space-between;
       align-items: flex-start;
-
       gap: 12px;
-
       padding-bottom: 12px;
-
       border-bottom: 1px solid #172d43;
     }
 
     .race-title {
       color: #ffffff;
-
       font-size: 18px;
       font-weight: 900;
     }
 
     .grade {
       display: inline-block;
-
       padding: 2px 6px;
-
       margin-left: 4px;
-
       border-radius: 5px;
-
       background: #18344c;
-
       color: #9ec7e7;
-
       font-size: 9px;
       font-weight: 900;
-
       vertical-align: middle;
     }
 
     .event-title {
       max-width: 500px;
-
       margin-top: 2px;
-
       color: #b2c1cf;
-
       font-size: 11px;
       font-weight: 700;
-
       overflow-wrap: anywhere;
     }
 
     .subtitle {
       color: #71869b;
-
       font-size: 9px;
-
       overflow-wrap: anywhere;
     }
 
     .deadline {
       margin-top: 5px;
-
       color: #61778d;
-
       font-size: 9px;
     }
 
@@ -426,34 +370,26 @@
 
     .confidence {
       flex: 0 0 auto;
-
-      min-width: 56px;
-
+      min-width: 58px;
       text-align: right;
     }
 
     .confidence strong {
       display: block;
-
       color: #ffffff;
-
       font-size: 22px;
       line-height: 1;
     }
 
     .confidence small {
       color: #667d94;
-
       font-size: 8px;
     }
 
     .level {
       display: inline-block;
-
       margin-bottom: 4px;
-
       color: #8bb7d6;
-
       font-size: 9px;
       font-weight: 900;
     }
@@ -473,27 +409,21 @@
 
     .pick-label {
       margin-bottom: 2px;
-
       color: #6d8297;
-
       font-size: 9px;
       font-weight: 800;
     }
 
     .pick-name {
       color: #ffffff;
-
       font-size: 19px;
       font-weight: 900;
     }
 
     .pick-reason {
       margin-top: 5px;
-
       color: #8ca0b3;
-
       font-size: 10px;
-
       overflow-wrap: anywhere;
     }
 
@@ -504,37 +434,25 @@
 
     .place {
       display: grid;
-
       grid-template-columns: 1fr 1fr;
-
       gap: 8px;
-
       margin-bottom: 11px;
     }
 
     .place > div {
       min-width: 0;
-
       padding: 9px;
-
       border-radius: 9px;
-
       background: #091725;
-
       color: #b8c7d5;
-
       font-size: 10px;
-
       overflow-wrap: anywhere;
     }
 
     .place b {
       display: block;
-
       margin-bottom: 2px;
-
       color: #647b91;
-
       font-size: 8px;
     }
 
@@ -545,58 +463,84 @@
 
     .bets {
       padding-top: 10px;
-
       border-top: 1px solid #172d43;
     }
 
     .bets-title {
       margin-bottom: 7px;
-
       color: #71869b;
-
       font-size: 9px;
       font-weight: 800;
     }
 
     .bet-list {
       display: flex;
-
       flex-wrap: wrap;
-
       gap: 7px;
     }
 
     .bet {
       display: flex;
-
       align-items: center;
       justify-content: center;
-
       min-width: 82px;
-
       padding: 8px 10px;
-
       border: 1px solid #244c6e;
       border-radius: 9px;
-
       background: #123552;
-
       color: #ffffff;
-
       font-size: 15px;
       font-weight: 900;
-
       letter-spacing: 1px;
     }
 
     .bet i {
       margin: 0 5px;
-
       color: #65b8ef;
-
       font-style: normal;
-
       font-size: 10px;
+    }
+
+
+    /* =========================
+       購入ボタン
+    ========================= */
+
+    .buy-area {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 11px;
+      padding-top: 10px;
+      border-top: 1px solid #172d43;
+    }
+
+    .buy-note {
+      color: #596f84;
+      font-size: 8px;
+    }
+
+    .buy-button {
+      flex: 0 0 auto;
+      padding: 9px 15px;
+      border: 1px solid #2d638b;
+      border-radius: 9px;
+      background: #123a5a;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .buy-button.purchased {
+      border-color: #39644d;
+      background: #163c2b;
+      color: #9ee0b8;
+    }
+
+    .buy-button:active {
+      transform: scale(.97);
     }
 
 
@@ -606,25 +550,17 @@
 
     .change {
       display: flex;
-
       gap: 7px;
-
       padding: 8px 9px;
-
       margin-top: 9px;
-
       border-radius: 8px;
-
       background: #17283a;
-
       color: #9eb0c1;
-
       font-size: 9px;
     }
 
     .change b {
       flex: 0 0 auto;
-
       color: #e0b84f;
     }
 
@@ -635,83 +571,57 @@
 
     .racers {
       display: grid;
-
-      grid-template-columns:
-        repeat(2, 1fr);
-
+      grid-template-columns: repeat(2, 1fr);
       gap: 5px;
-
       margin-top: 12px;
     }
 
     .racer {
       display: flex;
-
       align-items: center;
-
       min-width: 0;
-
       gap: 7px;
-
       padding: 7px;
-
       border-radius: 8px;
-
       background: #091725;
     }
 
     .racer-no {
       flex: 0 0 22px;
-
       width: 22px;
       height: 22px;
-
       border-radius: 6px;
-
       background: #1b334a;
-
       color: #dbe8f3;
-
       text-align: center;
-
       line-height: 22px;
-
       font-size: 10px;
       font-weight: 900;
     }
 
     .racer-info {
       min-width: 0;
-
       overflow: hidden;
     }
 
     .racer-info b {
       display: block;
-
       overflow: hidden;
-
       color: #b9c8d6;
-
       font-size: 9px;
-
       white-space: nowrap;
       text-overflow: ellipsis;
     }
 
     .racer-info span {
       color: #62788e;
-
       font-size: 8px;
     }
 
     .racer-time {
       flex: 0 0 auto;
-
       margin-left: auto;
-
       color: #71869b;
-
       font-size: 9px;
       font-weight: 700;
     }
@@ -723,27 +633,21 @@
 
     .empty {
       padding: 25px 15px;
-
       border: 1px solid #1b334d;
       border-radius: 14px;
-
       background: #0c1c2e;
-
       text-align: center;
     }
 
     .empty-title {
       color: #d8e2eb;
-
       font-size: 12px;
       font-weight: 800;
     }
 
     .empty-text {
       margin-top: 5px;
-
       color: #71869d;
-
       font-size: 10px;
     }
 
@@ -754,15 +658,10 @@
 
     footer {
       display: flex;
-
       justify-content: space-between;
-
       gap: 10px;
-
       padding-top: 20px;
-
       color: #4f6479;
-
       font-size: 8px;
     }
 
@@ -774,14 +673,26 @@
     @media (max-width: 600px) {
 
       .app {
-        padding:
-          15px
-          13px
-          35px;
+        padding: 15px 13px 35px;
       }
 
       h1 {
         font-size: 21px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .header-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .refresh,
+      .purchase-link {
+        padding: 8px 10px;
+        font-size: 10px;
       }
 
       .status-card {
@@ -802,20 +713,16 @@
 
       .bet {
         min-width: 80px;
-
         padding: 8px 9px;
-
         font-size: 14px;
       }
 
       .racers {
-        grid-template-columns:
-          repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr);
       }
 
       footer {
         flex-direction: column;
-
         gap: 3px;
       }
 
@@ -848,19 +755,29 @@
         <div
           id="date"
           class="muted"
-        >
-        </div>
+        ></div>
 
       </div>
 
 
-      <button
-        id="refresh"
-        class="refresh"
-        type="button"
-      >
-        更新
-      </button>
+      <div class="header-buttons">
+
+        <a
+          href="purchased.html"
+          class="purchase-link"
+        >
+          購入済み
+        </a>
+
+        <button
+          id="refresh"
+          class="refresh"
+          type="button"
+        >
+          更新
+        </button>
+
+      </div>
 
     </header>
 
@@ -887,10 +804,34 @@
       <div
         id="updated"
         class="muted"
-      >
-      </div>
+      ></div>
 
     </section>
+
+
+    <!-- =====================
+         分析情報
+    ====================== -->
+
+    <div class="analysis-info">
+
+      <div class="info-chip">
+        全レースを分析
+      </div>
+
+      <div class="info-chip">
+        締切前のみ表示
+      </div>
+
+      <div class="info-chip">
+        自信度順
+      </div>
+
+      <div class="info-chip">
+        激アツ厳選
+      </div>
+
+    </div>
 
 
     <!-- =====================
@@ -923,6 +864,10 @@
         </li>
 
         <li>
+          締切時刻を過ぎたレースは通常の予想一覧から自動的に除外します。
+        </li>
+
+        <li>
           自信度の高いレースを優先して表示します。
         </li>
 
@@ -940,6 +885,10 @@
 
         <li>
           更新によって予想が変わった場合は変更理由を表示します。
+        </li>
+
+        <li>
+          「買った」を押したレースは購入済みページに保存されます。
         </li>
 
       </ul>
@@ -970,7 +919,7 @@
        JavaScript
   ====================== -->
 
-  <script src="app.js?v=20260902"></script>
+  <script src="app.js?v=20260902-2"></script>
 
 </body>
 
