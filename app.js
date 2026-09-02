@@ -1,30 +1,11 @@
 const API = "https://boatraceopenapi.github.io/api/v1/today.json";
 
 const STADIUMS = {
-  1: "桐生",
-  2: "戸田",
-  3: "江戸川",
-  4: "平和島",
-  5: "多摩川",
-  6: "浜名湖",
-  7: "蒲郡",
-  8: "常滑",
-  9: "津",
-  10: "三国",
-  11: "びわこ",
-  12: "住之江",
-  13: "尼崎",
-  14: "鳴門",
-  15: "丸亀",
-  16: "児島",
-  17: "宮島",
-  18: "徳山",
-  19: "下関",
-  20: "若松",
-  21: "芦屋",
-  22: "福岡",
-  23: "唐津",
-  24: "大村"
+  1: "桐生", 2: "戸田", 3: "江戸川", 4: "平和島", 5: "多摩川",
+  6: "浜名湖", 7: "蒲郡", 8: "常滑", 9: "津", 10: "三国",
+  11: "びわこ", 12: "住之江", 13: "尼崎", 14: "鳴門", 15: "丸亀",
+  16: "児島", 17: "宮島", 18: "徳山", 19: "下関", 20: "若松",
+  21: "芦屋", 22: "福岡", 23: "唐津", 24: "大村"
 };
 
 const STORAGE_PREDICTIONS = "cyber-hacchan-predictions-v2";
@@ -58,12 +39,16 @@ function getRacer(racers, no) {
     racers[no] ||
     racers[String(no)] ||
     racers.find?.((r) => {
-      return (
-        safeNumber(
-          firstValue(r?.number, r?.racer_number, r?.boat_number, r?.lane),
-          0
-        ) === no
-      );
+      return safeNumber(
+        firstValue(
+          r?.number,
+          r?.entry_number,
+          r?.racer_number,
+          r?.boat_number,
+          r?.lane
+        ),
+        0
+      ) === no;
     }) ||
     {}
   );
@@ -107,7 +92,8 @@ function getTripleRate(racer) {
       racer?.national_triple_rate,
       racer?.triple_rate,
       racer?.national?.triple_rate,
-      racer?.zenkoku_triple_rate
+      racer?.zenkoku_triple_rate,
+      racer?.national_top_3_percent
     ),
     0
   );
@@ -130,7 +116,8 @@ function getMotorTripleRate(racer) {
     firstValue(
       racer?.motor_triple_rate,
       racer?.motor?.triple_rate,
-      racer?.motor_3ren_rate
+      racer?.motor_3ren_rate,
+      racer?.motor_top_3_percent
     ),
     0
   );
@@ -143,12 +130,16 @@ function getPreviewRacer(previewRacers, no) {
     previewRacers[no] ||
     previewRacers[String(no)] ||
     previewRacers.find?.((r) => {
-      return (
-        safeNumber(
-          firstValue(r?.number, r?.racer_number, r?.boat_number, r?.lane),
-          0
-        ) === no
-      );
+      return safeNumber(
+        firstValue(
+          r?.number,
+          r?.entry_number,
+          r?.racer_number,
+          r?.boat_number,
+          r?.lane
+        ),
+        0
+      ) === no;
     }) ||
     {}
   );
@@ -158,6 +149,7 @@ function getCourse(previewRacer) {
   return safeNumber(
     firstValue(
       previewRacer?.course,
+      previewRacer?.course_number,
       previewRacer?.entry_course,
       previewRacer?.in_course
     ),
@@ -190,7 +182,9 @@ function getStartTiming(previewRacer) {
 function isBeforeCutoff(race) {
   if (!race.closed_at) return true;
 
-  const cutoff = new Date(race.closed_at).getTime();
+  const cutoff = new Date(
+    String(race.closed_at).replace(" ", "T")
+  ).getTime();
 
   if (!Number.isFinite(cutoff)) return true;
 
@@ -200,7 +194,8 @@ function isBeforeCutoff(race) {
 function formatTime(value) {
   if (!value) return "--:--";
 
-  const date = new Date(value);
+  const normalized = String(value).replace(" ", "T");
+  const date = new Date(normalized);
 
   if (!Number.isNaN(date.getTime())) {
     return date.toLocaleTimeString("ja-JP", {
@@ -234,7 +229,6 @@ function gradeName(value) {
 
 function extractRaces(data) {
   const result = [];
-
   const stadiums = data?.programs?.stadiums;
 
   if (!stadiums) return result;
@@ -283,8 +277,14 @@ function normalizeRace(race) {
     dayNumber: firstValue(race.day_number, ""),
     grade: gradeName(race.grade_number),
     cutoff: race.closed_at,
+    date: firstValue(
+      race.date,
+      race.closed_at?.slice?.(0, 10),
+      ""
+    ),
     racers,
-    previewRacers
+    previewRacers,
+    result: race.result || null
   };
 }
 
@@ -300,17 +300,10 @@ function playerScore(racer, boatNo) {
     local * 2.4 +
     motor * 1.4;
 
-  if (boatNo === 1) {
-    score += 13;
-  }
+  if (boatNo === 1) score += 13;
 
-  if (getClass(racer) === "A1") {
-    score += 7;
-  }
-
-  if (getClass(racer) === "A2") {
-    score += 3;
-  }
+  if (getClass(racer) === "A1") score += 7;
+  if (getClass(racer) === "A2") score += 3;
 
   return score;
 }
@@ -342,11 +335,61 @@ function previewScore(previewRacer, boatNo) {
     else if (absSt >= 0.20) score -= 4;
   }
 
-  if (boatNo === 1 && course === 1) {
-    score += 9;
-  }
+  if (boatNo === 1 && course === 1) score += 9;
 
   return score;
+}
+
+function buildBets(data, level, first, second, third) {
+  const top = data.slice(0, 4).map((x) => x.no);
+  const fourth = top[3];
+
+  const bets = [];
+
+  function add(a, b, c) {
+    const bet = `${a}-${b}-${c}`;
+
+    if (
+      a === b ||
+      a === c ||
+      b === c ||
+      bets.includes(bet)
+    ) {
+      return;
+    }
+
+    bets.push(bet);
+  }
+
+  if (first.no === 1) {
+    add(1, second.no, third.no);
+    add(1, third.no, second.no);
+
+    if (level !== "激アツ") {
+      add(1, second.no, fourth);
+      add(1, fourth, second.no);
+    }
+
+    if (level === "有力" || level === "候補") {
+      add(1, third.no, fourth);
+      add(1, fourth, third.no);
+    }
+  } else {
+    add(first.no, 1, second.no);
+    add(first.no, second.no, 1);
+    add(1, first.no, second.no);
+
+    if (level !== "激アツ") {
+      add(first.no, 1, third.no);
+      add(1, first.no, third.no);
+    }
+
+    if (level === "候補") {
+      add(first.no, third.no, 1);
+    }
+  }
+
+  return bets;
 }
 
 function scoreRace(race) {
@@ -362,36 +405,41 @@ function scoreRace(race) {
       continue;
     }
 
-    const preview = getPreviewRacer(previewRacers, no);
+    const preview = getPreviewRacer(
+      previewRacers,
+      no
+    );
 
     const base = playerScore(racer, no);
-    const previewScoreValue = previewScore(preview, no);
+    const previewValue = previewScore(
+      preview,
+      no
+    );
 
     data.push({
       no,
       racer,
       preview,
-      score: base + previewScoreValue
+      score: base + previewValue
     });
   }
 
-  if (data.length < 6) {
-    return null;
-  }
+  if (data.length < 6) return null;
 
   data.sort((a, b) => b.score - a.score);
 
   const first = data[0];
   const second = data[1];
   const third = data[2];
-
   const boat1 = data.find((x) => x.no === 1);
 
   const firstIsBoat1 = first.no === 1;
 
   const diff =
     first.score > 0
-      ? ((first.score - second.score) / first.score) * 100
+      ? ((first.score - second.score) /
+          first.score) *
+        100
       : 0;
 
   const boat1Advantage =
@@ -406,13 +454,18 @@ function scoreRace(race) {
     confidence += 5;
   }
 
-  if (getExhibition(boat1?.preview) > 0 &&
-      getExhibition(boat1?.preview) <= 6.75) {
+  if (
+    getExhibition(boat1?.preview) > 0 &&
+    getExhibition(boat1?.preview) <= 6.75
+  ) {
     confidence += 4;
   }
 
   confidence = Math.round(
-    Math.max(45, Math.min(96, confidence))
+    Math.max(
+      45,
+      Math.min(96, confidence)
+    )
   );
 
   let level = "候補";
@@ -436,49 +489,49 @@ function scoreRace(race) {
     level = "有力";
   }
 
-  const candidates = data
-    .slice(1, 4)
-    .map((x) => x.no);
-
-  const bets = [];
-
-  if (first.no === 1) {
-    bets.push(`1-${second.no}-${third.no}`);
-    bets.push(`1-${third.no}-${second.no}`);
-
-    if (candidates[2]) {
-      bets.push(`1-${second.no}-${candidates[2]}`);
-    }
-  } else {
-    bets.push(`${first.no}-1-${second.no}`);
-    bets.push(`1-${first.no}-${second.no}`);
-    bets.push(`${first.no}-${second.no}-1`);
-  }
+  const bets = buildBets(
+    data,
+    level,
+    first,
+    second,
+    third
+  );
 
   const reasonParts = [];
 
   if (firstIsBoat1) {
     reasonParts.push("1号艇を本命評価");
   } else {
-    reasonParts.push(`${first.no}号艇の総合評価が最上位`);
+    reasonParts.push(
+      `${first.no}号艇の総合評価が最上位`
+    );
   }
 
-  const course1 = getCourse(boat1?.preview);
+  const course1 =
+    getCourse(boat1?.preview);
 
   if (course1 === 1) {
     reasonParts.push("進入1コース");
   }
 
-  const ex1 = getExhibition(boat1?.preview);
+  const ex1 =
+    getExhibition(boat1?.preview);
 
   if (ex1 > 0) {
-    reasonParts.push(`展示${ex1.toFixed(2)}`);
+    reasonParts.push(
+      `展示${ex1.toFixed(2)}`
+    );
   }
 
-  const st1 = getStartTiming(boat1?.preview);
+  const st1 =
+    getStartTiming(boat1?.preview);
 
   if (st1 !== 0) {
-    reasonParts.push(`ST ${st1 > 0 ? "+" : ""}${st1.toFixed(2)}`);
+    reasonParts.push(
+      `ST ${
+        st1 > 0 ? "+" : ""
+      }${st1.toFixed(2)}`
+    );
   }
 
   return {
@@ -501,7 +554,9 @@ function scoreRace(race) {
 function getPredictionHistory() {
   try {
     return JSON.parse(
-      localStorage.getItem(STORAGE_PREDICTIONS) || "{}"
+      localStorage.getItem(
+        STORAGE_PREDICTIONS
+      ) || "{}"
     );
   } catch {
     return {};
@@ -509,7 +564,8 @@ function getPredictionHistory() {
 }
 
 function savePrediction(item) {
-  const history = getPredictionHistory();
+  const history =
+    getPredictionHistory();
 
   const key =
     `${item.stadiumNo}-${item.raceNo}`;
@@ -519,7 +575,10 @@ function savePrediction(item) {
   let changeReason = "";
 
   if (previous) {
-    if (previous.mainNo !== item.mainNo) {
+    if (
+      previous.mainNo !==
+      item.mainNo
+    ) {
       changeReason =
         `本命変更：${previous.mainNo}号艇 → ${item.mainNo}号艇`;
     } else if (
@@ -557,7 +616,9 @@ function savePrediction(item) {
 function getPurchased() {
   try {
     return JSON.parse(
-      localStorage.getItem(STORAGE_PURCHASED) || "{}"
+      localStorage.getItem(
+        STORAGE_PURCHASED
+      ) || "{}"
     );
   } catch {
     return {};
@@ -565,7 +626,8 @@ function getPurchased() {
 }
 
 function savePurchased(item) {
-  const purchased = getPurchased();
+  const purchased =
+    getPurchased();
 
   const key =
     `${item.stadiumNo}-${item.raceNo}`;
@@ -575,6 +637,7 @@ function savePurchased(item) {
     stadiumNo: item.stadiumNo,
     stadiumName: item.stadiumName,
     raceNo: item.raceNo,
+    date: item.date || "",
     title: item.title,
     subtitle: item.subtitle,
     grade: item.grade,
@@ -598,7 +661,8 @@ function savePurchased(item) {
 }
 
 function removePurchased(item) {
-  const purchased = getPurchased();
+  const purchased =
+    getPurchased();
 
   const key =
     `${item.stadiumNo}-${item.raceNo}`;
@@ -612,7 +676,8 @@ function removePurchased(item) {
 }
 
 function isPurchased(item) {
-  const purchased = getPurchased();
+  const purchased =
+    getPurchased();
 
   return Boolean(
     purchased[
@@ -623,6 +688,53 @@ function isPurchased(item) {
 
 function normalizeResult(result) {
   if (!result) return null;
+
+  // 現行APIの結果形式
+  // result.racers の place_number を利用
+  if (result.racers) {
+    const rows = [];
+
+    Object.entries(
+      result.racers
+    ).forEach(([key, racer]) => {
+      const boatNo = safeNumber(
+        key,
+        safeNumber(
+          racer?.entry_number,
+          0
+        )
+      );
+
+      const placeNo =
+        safeNumber(
+          racer?.place_number,
+          0
+        );
+
+      if (
+        boatNo >= 1 &&
+        boatNo <= 6 &&
+        placeNo >= 1 &&
+        placeNo <= 6
+      ) {
+        rows.push({
+          boatNo,
+          placeNo
+        });
+      }
+    });
+
+    rows.sort(
+      (a, b) =>
+        a.placeNo - b.placeNo
+    );
+
+    if (rows.length >= 3) {
+      return rows
+        .slice(0, 3)
+        .map((x) => x.boatNo);
+    }
+  }
 
   const order =
     result.order ||
@@ -635,13 +747,16 @@ function normalizeResult(result) {
   if (Array.isArray(order)) {
     const nums = order
       .map((x) => {
-        if (typeof x === "number") return x;
+        if (typeof x === "number") {
+          return x;
+        }
 
         return safeNumber(
           firstValue(
             x?.boat_number,
             x?.boat,
             x?.number,
+            x?.entry_number,
             x?.rank_number,
             x
           ),
@@ -671,31 +786,43 @@ function normalizeResult(result) {
 }
 
 function checkHit(item, result) {
-  const actual = normalizeResult(result);
+  const actual =
+    normalizeResult(result);
 
-  if (!actual || actual.length < 3) {
+  if (
+    !actual ||
+    actual.length < 3
+  ) {
     return null;
   }
 
   const key =
     `${item.stadiumNo}-${item.raceNo}`;
 
-  const purchased = getPurchased();
+  const purchased =
+    getPurchased();
 
-  const saved = purchased[key];
+  const saved =
+    purchased[key];
 
   if (!saved) return null;
 
-  const bets = saved.bets || [];
+  const bets =
+    saved.bets || [];
 
-  const actualText = actual.join("-");
+  const actualText =
+    actual.join("-");
 
-  const hit = bets.some((bet) => {
-    return bet === actualText;
-  });
+  const hit =
+    bets.some(
+      (bet) =>
+        bet === actualText
+    );
 
   saved.result = actual;
   saved.hit = hit;
+  saved.resultUpdatedAt =
+    Date.now();
 
   purchased[key] = saved;
 
@@ -707,21 +834,103 @@ function checkHit(item, result) {
   return hit;
 }
 
+function syncPurchasedResults(races) {
+  const purchased =
+    getPurchased();
+
+  let changed = false;
+
+  races.forEach((race) => {
+    const key =
+      `${race.stadiumNo}-${race.raceNo}`;
+
+    const saved =
+      purchased[key];
+
+    if (!saved) return;
+    if (!race.result) return;
+
+    const actual =
+      normalizeResult(
+        race.result
+      );
+
+    if (
+      !actual ||
+      actual.length < 3
+    ) {
+      return;
+    }
+
+    const actualText =
+      actual.join("-");
+
+    const bets =
+      saved.bets || [];
+
+    const hit =
+      bets.some(
+        (bet) =>
+          bet === actualText
+      );
+
+    if (
+      JSON.stringify(saved.result) !==
+        JSON.stringify(actual) ||
+      saved.hit !== hit
+    ) {
+      saved.result = actual;
+      saved.hit = hit;
+      saved.resultUpdatedAt =
+        Date.now();
+
+      purchased[key] = saved;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    localStorage.setItem(
+      STORAGE_PURCHASED,
+      JSON.stringify(purchased)
+    );
+  }
+}
+
 function renderRacer(race, no) {
-  const racer = getRacer(race.racers, no);
-  const preview = getPreviewRacer(
-    race.previewRacers,
-    no
-  );
+  const racer =
+    getRacer(
+      race.racers,
+      no
+    );
 
-  const name = getName(racer);
-  const cls = getClass(racer);
+  const preview =
+    getPreviewRacer(
+      race.previewRacers,
+      no
+    );
 
-  const exhibition = getExhibition(preview);
-  const st = getStartTiming(preview);
-  const course = getCourse(preview);
+  const name =
+    getName(racer);
 
-  let detail = cls || "";
+  const cls =
+    getClass(racer);
+
+  const exhibition =
+    getExhibition(
+      preview
+    );
+
+  const st =
+    getStartTiming(
+      preview
+    );
+
+  const course =
+    getCourse(preview);
+
+  let detail =
+    cls || "";
 
   if (course) {
     detail +=
@@ -735,18 +944,30 @@ function renderRacer(race, no) {
 
   if (st) {
     detail +=
-      `${detail ? " / " : ""}ST ${st > 0 ? "+" : ""}${st.toFixed(2)}`;
+      `${detail ? " / " : ""}ST ${
+        st > 0 ? "+" : ""
+      }${st.toFixed(2)}`;
   }
 
   return `
     <div class="racer">
       <div class="racer-no">${no}</div>
+
       <div class="racer-info">
         <b>${escapeHtml(name)}</b>
-        <span>${escapeHtml(detail || "情報なし")}</span>
+        <span>
+          ${escapeHtml(
+            detail || "情報なし"
+          )}
+        </span>
       </div>
+
       <div class="racer-time">
-        ${exhibition ? exhibition.toFixed(2) : "--"}
+        ${
+          exhibition
+            ? exhibition.toFixed(2)
+            : "--"
+        }
       </div>
     </div>
   `;
@@ -754,100 +975,172 @@ function renderRacer(race, no) {
 
 function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 }
 
 function renderRace(item) {
-  const purchased = isPurchased(item);
+  const purchased =
+    isPurchased(item);
 
   const changeReason =
     savePrediction(item);
 
-  const racersHtml = [1,2,3,4,5,6]
-    .map((no) => renderRacer(item, no))
-    .join("");
+  const racersHtml =
+    [1,2,3,4,5,6]
+      .map((no) =>
+        renderRacer(
+          item,
+          no
+        )
+      )
+      .join("");
 
-  const betsHtml = item.bets
-    .map((bet) => {
-      const parts = bet.split("-");
+  const betsHtml =
+    item.bets
+      .map((bet) => {
+        const parts =
+          bet.split("-");
 
-      return `
-        <div class="bet">
-          ${parts
-            .map((n, index) => {
-              return `
-                ${index ? "<i>→</i>" : ""}
-                ${n}
-              `;
-            })
-            .join("")}
+        return `
+          <div class="bet">
+            ${parts
+              .map(
+                (n, index) =>
+                  `${
+                    index
+                      ? "<i>→</i>"
+                      : ""
+                  }${n}`
+              )
+              .join("")}
+          </div>
+        `;
+      })
+      .join("");
+
+  const changeHtml =
+    changeReason
+      ? `
+        <div class="change">
+          <b>予想変更</b>
+          <span>
+            ${escapeHtml(
+              changeReason
+            )}
+          </span>
         </div>
-      `;
-    })
-    .join("");
-
-  const changeHtml = changeReason
-    ? `
-      <div class="change">
-        <b>予想変更</b>
-        <span>${escapeHtml(changeReason)}</span>
-      </div>
-    `
-    : "";
+      `
+      : "";
 
   return `
-    <article class="race-card ${item.hot ? "hot" : ""}">
+    <article
+      class="race-card ${
+        item.hot ? "hot" : ""
+      }"
+    >
 
       <div class="race-top">
 
         <div>
+
           <div class="race-title">
             ${item.raceNo}R
-            <span class="grade">${escapeHtml(item.grade)}</span>
+            <span class="grade">
+              ${escapeHtml(
+                item.grade
+              )}
+            </span>
           </div>
 
           <div class="event-title">
-            ${escapeHtml(item.title || "レース")}
+            ${escapeHtml(
+              item.title ||
+              "レース"
+            )}
           </div>
 
           <div class="subtitle">
-            ${escapeHtml(item.subtitle || "")}
+            ${escapeHtml(
+              item.subtitle ||
+              ""
+            )}
           </div>
 
           <div class="deadline">
-            締切 ${formatTime(item.cutoff)}
+            締切
+            ${formatTime(
+              item.cutoff
+            )}
           </div>
+
         </div>
 
         <div class="confidence">
-          <span class="level ${item.hot ? "hot-level" : ""}">
+
+          <span
+            class="level ${
+              item.hot
+                ? "hot-level"
+                : ""
+            }"
+          >
             ${item.level}
           </span>
 
-          <strong>${item.confidence}</strong>
-          <small>自信度</small>
+          <strong>
+            ${item.confidence}
+          </strong>
+
+          <small>
+            自信度
+          </small>
+
         </div>
 
       </div>
 
       <div class="main-pick">
-        <div class="pick-label">本命</div>
+
+        <div class="pick-label">
+          本命
+        </div>
 
         <div class="pick-name">
           ${item.mainNo}号艇
-          ${escapeHtml(item.mainName)}
+          ${escapeHtml(
+            item.mainName
+          )}
         </div>
 
         <div class="pick-reason">
-          ${escapeHtml(item.reason)}
+          ${escapeHtml(
+            item.reason
+          )}
         </div>
+
       </div>
 
       <div class="place">
+
         <div>
           <b>2着候補</b>
           ${item.secondNo}号艇
@@ -857,14 +1150,22 @@ function renderRace(item) {
           <b>3着候補</b>
           ${item.thirdNo}号艇
         </div>
+
       </div>
 
       <div class="bets">
-        <div class="bets-title">推奨買い目</div>
+
+        <div class="bets-title">
+          推奨買い目
+          <small>
+            ${item.bets.length}点
+          </small>
+        </div>
 
         <div class="bet-list">
           ${betsHtml}
         </div>
+
       </div>
 
       ${changeHtml}
@@ -876,14 +1177,25 @@ function renderRace(item) {
       <div class="buy-area">
 
         <div class="buy-note">
-          購入したレースだけ履歴・的中率に反映
+          購入したレースだけ
+          履歴・的中率に反映
         </div>
 
         <button
-          class="buy-button ${purchased ? "purchased" : ""}"
-          data-buy="${item.stadiumNo}-${item.raceNo}"
+          class="buy-button ${
+            purchased
+              ? "purchased"
+              : ""
+          }"
+          data-buy="${
+            item.stadiumNo
+          }-${item.raceNo}"
         >
-          ${purchased ? "購入済み" : "買った"}
+          ${
+            purchased
+              ? "購入済み"
+              : "買った"
+          }
         </button>
 
       </div>
@@ -893,70 +1205,115 @@ function renderRace(item) {
 }
 
 function renderTabs(items) {
-  const tabs = $("stadiumTabs");
+  const tabs =
+    $("stadiumTabs");
 
   if (!tabs) return;
 
   const counts = {};
 
-  items.forEach((item) => {
-    counts[item.stadiumNo] =
-      (counts[item.stadiumNo] || 0) + 1;
-  });
+  items.forEach(
+    (item) => {
+      counts[item.stadiumNo] =
+        (counts[
+          item.stadiumNo
+        ] || 0) + 1;
+    }
+  );
 
-  const stadiumNos = Object.keys(counts)
-    .map(Number)
-    .sort((a, b) => a - b);
+  const stadiumNos =
+    Object.keys(counts)
+      .map(Number)
+      .sort(
+        (a, b) => a - b
+      );
 
   tabs.innerHTML = `
     <button
-      class="stadium-tab ${selectedStadium === "all" ? "active" : ""}"
+      class="stadium-tab ${
+        selectedStadium ===
+        "all"
+          ? "active"
+          : ""
+      }"
       data-stadium="all"
     >
       <span>全場</span>
-      <small>${items.length}R</small>
+      <small>
+        ${items.length}R
+      </small>
     </button>
 
-    ${stadiumNos.map((no) => `
-      <button
-        class="stadium-tab ${
-          selectedStadium === String(no)
-            ? "active"
-            : ""
-        }"
-        data-stadium="${no}"
-      >
-        <span>${escapeHtml(STADIUMS[no])}</span>
-        <small>${counts[no]}R</small>
-      </button>
-    `).join("")}
+    ${stadiumNos
+      .map(
+        (no) => `
+          <button
+            class="stadium-tab ${
+              selectedStadium ===
+              String(no)
+                ? "active"
+                : ""
+            }"
+            data-stadium="${no}"
+          >
+            <span>
+              ${escapeHtml(
+                STADIUMS[no]
+              )}
+            </span>
+
+            <small>
+              ${counts[no]}R
+            </small>
+          </button>
+        `
+      )
+      .join("")}
   `;
 
-  tabs.querySelectorAll(".stadium-tab")
-    .forEach((button) => {
-      button.addEventListener("click", () => {
-        selectedStadium =
-          button.dataset.stadium;
+  tabs
+    .querySelectorAll(
+      ".stadium-tab"
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            selectedStadium =
+              button.dataset.stadium;
 
-        renderMain();
-      });
-    });
+            renderMain();
+          }
+        );
+      }
+    );
 }
 
 function renderMain() {
-  const hot = allRaces
-    .filter((x) => x.hot && isBeforeCutoff(x))
-    .sort((a, b) =>
-      b.confidence - a.confidence
-    )
-    .slice(0, 3);
+  const hot =
+    allRaces
+      .filter(
+        (x) =>
+          x.hot &&
+          isBeforeCutoff(x)
+      )
+      .sort(
+        (a, b) =>
+          b.confidence -
+          a.confidence
+      )
+      .slice(0, 3);
 
-  const hotBox = $("hotRaces");
+  const hotBox =
+    $("hotRaces");
 
   if (hotBox) {
     if (hot.length) {
       hotBox.innerHTML =
-        hot.map(renderRace).join("");
+        hot
+          .map(renderRace)
+          .join("");
     } else {
       hotBox.innerHTML = `
         <div class="no-hot">
@@ -967,25 +1324,38 @@ function renderMain() {
     }
   }
 
-  const normal = allRaces
-    .filter((x) => !x.hot)
-    .filter(isBeforeCutoff)
-    .sort((a, b) =>
-      b.confidence - a.confidence
-    );
+  const normal =
+    allRaces
+      .filter(
+        (x) => !x.hot
+      )
+      .filter(
+        isBeforeCutoff
+      )
+      .sort(
+        (a, b) =>
+          b.confidence -
+          a.confidence
+      );
 
   renderTabs(normal);
 
   const filtered =
-    selectedStadium === "all"
+    selectedStadium ===
+    "all"
       ? normal
       : normal.filter(
           (x) =>
-            String(x.stadiumNo) ===
-            String(selectedStadium)
+            String(
+              x.stadiumNo
+            ) ===
+            String(
+              selectedStadium
+            )
         );
 
-  const picks = $("picks");
+  const picks =
+    $("picks");
 
   if (!picks) return;
 
@@ -997,7 +1367,9 @@ function renderMain() {
     `;
   } else {
     picks.innerHTML =
-      filtered.map(renderRace).join("");
+      filtered
+        .map(renderRace)
+        .join("");
   }
 
   bindBuyButtons();
@@ -1005,44 +1377,62 @@ function renderMain() {
 
 function bindBuyButtons() {
   document
-    .querySelectorAll("[data-buy]")
-    .forEach((button) => {
-      button.addEventListener("click", () => {
+    .querySelectorAll(
+      "[data-buy]"
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            const key =
+              button.dataset.buy;
 
-        const key = button.dataset.buy;
+            const item =
+              allRaces.find(
+                (x) =>
+                  `${x.stadiumNo}-${x.raceNo}` ===
+                  key
+              );
 
-        const item = allRaces.find(
-          (x) =>
-            `${x.stadiumNo}-${x.raceNo}` === key
+            if (!item) return;
+
+            if (
+              isPurchased(item)
+            ) {
+              removePurchased(
+                item
+              );
+            } else {
+              savePurchased(
+                item
+              );
+            }
+
+            renderMain();
+          }
         );
-
-        if (!item) return;
-
-        if (isPurchased(item)) {
-          removePurchased(item);
-        } else {
-          savePurchased(item);
-        }
-
-        renderMain();
-      });
-    });
+      }
+    );
 }
 
 async function load() {
-  const status = $("status");
+  const status =
+    $("status");
 
   if (status) {
-    status.textContent = "データ取得中…";
+    status.textContent =
+      "データ取得中…";
   }
 
   try {
-    const response = await fetch(
-      `${API}?t=${Date.now()}`,
-      {
-        cache: "no-store"
-      }
-    );
+    const response =
+      await fetch(
+        `${API}?t=${Date.now()}`,
+        {
+          cache: "no-store"
+        }
+      );
 
     if (!response.ok) {
       throw new Error(
@@ -1050,22 +1440,39 @@ async function load() {
       );
     }
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
-    const races = extractRaces(data)
-      .map(normalizeRace)
-      .filter((race) => race.raceNo >= 1 && race.raceNo <= 12);
+    const races =
+      extractRaces(data)
+        .map(
+          normalizeRace
+        )
+        .filter(
+          (race) =>
+            race.raceNo >= 1 &&
+            race.raceNo <= 12
+        );
 
-    const scored = races
-      .map(scoreRace)
-      .filter(Boolean);
+    // 購入済みレースの結果を自動反映
+    syncPurchasedResults(
+      races
+    );
 
-    allRaces = scored
-      .sort((a, b) =>
-        b.confidence - a.confidence
+    const scored =
+      races
+        .map(scoreRace)
+        .filter(Boolean);
+
+    allRaces =
+      scored.sort(
+        (a, b) =>
+          b.confidence -
+          a.confidence
       );
 
-    const now = new Date();
+    const now =
+      new Date();
 
     if (status) {
       status.textContent =
@@ -1074,10 +1481,13 @@ async function load() {
 
     if ($("updatedAt")) {
       $("updatedAt").textContent =
-        now.toLocaleTimeString("ja-JP", {
-          hour: "2-digit",
-          minute: "2-digit"
-        });
+        now.toLocaleTimeString(
+          "ja-JP",
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        );
     }
 
     if ($("analysisCount")) {
@@ -1087,18 +1497,37 @@ async function load() {
 
     if ($("recommendCount")) {
       $("recommendCount").textContent =
-        `推奨 ${allRaces.filter((x) => !x.hot && isBeforeCutoff(x)).length}R`;
+        `推奨 ${
+          allRaces.filter(
+            (x) =>
+              !x.hot &&
+              isBeforeCutoff(x)
+          ).length
+        }R`;
     }
 
     if ($("hotCount")) {
       $("hotCount").textContent =
-        `激アツ ${allRaces.filter((x) => x.hot && isBeforeCutoff(x)).length}R`;
+        `激アツ ${
+          allRaces.filter(
+            (x) =>
+              x.hot &&
+              isBeforeCutoff(x)
+          ).length
+        }R`;
     }
 
     renderMain();
 
-  } catch (error) {
+    // 購入ページなら成績表示を更新
+    if (
+      typeof renderPurchasedPage ===
+      "function"
+    ) {
+      renderPurchasedPage();
+    }
 
+  } catch (error) {
     console.error(error);
 
     if (status) {
@@ -1106,7 +1535,8 @@ async function load() {
         "データ取得に失敗しました";
     }
 
-    const picks = $("picks");
+    const picks =
+      $("picks");
 
     if (picks) {
       picks.innerHTML = `
@@ -1117,7 +1547,8 @@ async function load() {
       `;
     }
 
-    const hot = $("hotRaces");
+    const hot =
+      $("hotRaces");
 
     if (hot) {
       hot.innerHTML = `
@@ -1130,19 +1561,29 @@ async function load() {
 }
 
 function init() {
-  const refresh = $("refreshBtn");
+  const refresh =
+    $("refreshBtn");
 
   if (refresh) {
-    refresh.addEventListener("click", () => {
-      load();
-    });
+    refresh.addEventListener(
+      "click",
+      () => {
+        load();
+      }
+    );
   }
 
   load();
 
-  setInterval(() => {
-    load();
-  }, 180000);
+  setInterval(
+    () => {
+      load();
+    },
+    180000
+  );
 }
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener(
+  "DOMContentLoaded",
+  init
+);
