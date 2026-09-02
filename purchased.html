@@ -82,15 +82,39 @@
       white-space: nowrap;
     }
 
-    .summary {
+    .period-tabs {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .period-tab {
+      padding: 9px 5px;
+      border: 1px solid #1b334d;
+      border-radius: 9px;
+      background: #0c1c2e;
+      color: #71869b;
+      font-size: 9px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .period-tab.active {
+      border-color: #356487;
+      background: #123552;
+      color: #ffffff;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 7px;
       margin-bottom: 18px;
     }
 
     .summary-box {
-      padding: 12px 8px;
+      padding: 12px 5px;
       border: 1px solid #1b334d;
       border-radius: 12px;
       background: #0c1c2e;
@@ -100,13 +124,13 @@
     .summary-box b {
       display: block;
       color: #ffffff;
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1.1;
     }
 
     .summary-box span {
       color: #687e94;
-      font-size: 8px;
+      font-size: 7px;
       font-weight: 800;
     }
 
@@ -229,23 +253,6 @@
       font-size: 9px;
     }
 
-    .delete-area {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 9px;
-    }
-
-    .delete-button {
-      padding: 6px 9px;
-      border: 1px solid #49323a;
-      border-radius: 7px;
-      background: transparent;
-      color: #9b717b;
-      font-size: 8px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
     .empty {
       padding: 35px 15px;
       border: 1px solid #1b334d;
@@ -264,6 +271,23 @@
       margin-top: 5px;
       color: #71869d;
       font-size: 10px;
+    }
+
+    .delete-area {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 9px;
+    }
+
+    .delete-button {
+      padding: 6px 9px;
+      border: 1px solid #49323a;
+      border-radius: 7px;
+      background: transparent;
+      color: #9b717b;
+      font-size: 8px;
+      font-weight: 800;
+      cursor: pointer;
     }
 
     .clear-all {
@@ -298,14 +322,13 @@
       }
 
       .summary-box b {
-        font-size: 18px;
+        font-size: 17px;
       }
 
     }
 
   </style>
 </head>
-
 
 <body>
 
@@ -334,12 +357,36 @@
 
     </header>
 
+    <div class="period-tabs">
+
+      <button
+        class="period-tab active"
+        data-period="all"
+      >
+        全期間
+      </button>
+
+      <button
+        class="period-tab"
+        data-period="month"
+      >
+        今月
+      </button>
+
+      <button
+        class="period-tab"
+        data-period="today"
+      >
+        今日
+      </button>
+
+    </div>
 
     <section class="summary">
 
       <div class="summary-box">
         <b id="total-count">0</b>
-        <span>購入レース</span>
+        <span>購入</span>
       </div>
 
       <div class="summary-box">
@@ -348,12 +395,16 @@
       </div>
 
       <div class="summary-box">
+        <b id="hit-count">0</b>
+        <span>的中</span>
+      </div>
+
+      <div class="summary-box">
         <b id="hit-rate">-</b>
         <span>的中率</span>
       </div>
 
     </section>
-
 
     <section id="purchase-list">
 
@@ -371,7 +422,6 @@
 
     </section>
 
-
     <button
       id="clear-all"
       class="clear-all"
@@ -380,15 +430,504 @@
       購入履歴をすべて削除
     </button>
 
-
     <footer>
-      このページは「買った」ボタンを押した履歴を表示します。
+      「買った」ボタンを押したレースだけが成績に反映されます。
     </footer>
 
   </main>
 
+  <script>
 
-  <script src="app.js?v=20260902-2"></script>
+    const PURCHASED_KEY =
+      "cyber-hacchan-purchased-v2";
+
+    let selectedPeriod = "all";
+
+    function getPurchasedPageData() {
+      try {
+        return JSON.parse(
+          localStorage.getItem(
+            PURCHASED_KEY
+          ) || "{}"
+        );
+      } catch {
+        return {};
+      }
+    }
+
+    function escapePageHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function getRaceDate(item) {
+      if (item.date) {
+        return String(item.date).slice(0, 10);
+      }
+
+      if (item.cutoff) {
+        return String(item.cutoff)
+          .replace(" ", "T")
+          .slice(0, 10);
+      }
+
+      if (item.purchasedAt) {
+        return new Date(
+          item.purchasedAt
+        )
+          .toLocaleDateString(
+            "sv-SE",
+            {
+              timeZone: "Asia/Tokyo"
+            }
+          );
+      }
+
+      return "";
+    }
+
+    function isToday(item) {
+      const today =
+        new Date()
+          .toLocaleDateString(
+            "sv-SE",
+            {
+              timeZone: "Asia/Tokyo"
+            }
+          );
+
+      return (
+        getRaceDate(item) ===
+        today
+      );
+    }
+
+    function isThisMonth(item) {
+      const today =
+        new Date()
+          .toLocaleDateString(
+            "sv-SE",
+            {
+              timeZone: "Asia/Tokyo"
+            }
+          );
+
+      return (
+        getRaceDate(item).slice(0, 7) ===
+        today.slice(0, 7)
+      );
+    }
+
+    function filterItems(items) {
+      if (selectedPeriod === "today") {
+        return items.filter(
+          isToday
+        );
+      }
+
+      if (selectedPeriod === "month") {
+        return items.filter(
+          isThisMonth
+        );
+      }
+
+      return items;
+    }
+
+    function renderSummary(items) {
+      const total =
+        items.length;
+
+      const settled =
+        items.filter(
+          (item) =>
+            Array.isArray(
+              item.result
+            ) &&
+            item.result.length >= 3 &&
+            typeof item.hit ===
+              "boolean"
+        ).length;
+
+      const hits =
+        items.filter(
+          (item) =>
+            item.hit === true
+        ).length;
+
+      const rate =
+        settled > 0
+          ? `${(
+              (hits / settled) *
+              100
+            ).toFixed(1)}%`
+          : "-";
+
+      document.getElementById(
+        "total-count"
+      ).textContent = total;
+
+      document.getElementById(
+        "settled-count"
+      ).textContent = settled;
+
+      document.getElementById(
+        "hit-count"
+      ).textContent = hits;
+
+      document.getElementById(
+        "hit-rate"
+      ).textContent = rate;
+    }
+
+    function renderPurchase(item) {
+      const resultReady =
+        Array.isArray(
+          item.result
+        ) &&
+        item.result.length >= 3 &&
+        typeof item.hit ===
+          "boolean";
+
+      const cardClass =
+        resultReady
+          ? item.hit
+            ? "hit"
+            : "miss"
+          : "";
+
+      const badgeClass =
+        resultReady
+          ? item.hit
+            ? "hit"
+            : "miss"
+          : "";
+
+      const badgeText =
+        resultReady
+          ? item.hit
+            ? "的中"
+            : "外れ"
+          : "結果待ち";
+
+      const resultText =
+        resultReady
+          ? item.result.join(" - ")
+          : "まだ結果が確定していません";
+
+      const bets =
+        Array.isArray(item.bets)
+          ? item.bets
+          : [];
+
+      const betsHtml =
+        bets
+          .map(
+            (bet) => `
+              <div class="bet">
+                ${escapePageHtml(
+                  bet
+                )}
+              </div>
+            `
+          )
+          .join("");
+
+      return `
+        <article
+          class="purchase-card ${cardClass}"
+        >
+
+          <div class="card-top">
+
+            <div>
+
+              <div class="race-name">
+                ${escapePageHtml(
+                  item.stadiumName ||
+                  ""
+                )}
+                ${item.raceNo || ""}R
+              </div>
+
+              <div class="race-sub">
+                ${escapePageHtml(
+                  item.grade ||
+                  ""
+                )}
+                ${
+                  item.title
+                    ? ` / ${escapePageHtml(
+                        item.title
+                      )}`
+                    : ""
+                }
+              </div>
+
+            </div>
+
+            <div
+              class="result-badge ${badgeClass}"
+            >
+              ${badgeText}
+            </div>
+
+          </div>
+
+          <div class="details">
+
+            <div class="detail">
+              <span>本命</span>
+              <b>
+                ${item.mainNo || "-"}号艇
+                ${
+                  item.mainName
+                    ? escapePageHtml(
+                        item.mainName
+                      )
+                    : ""
+                }
+              </b>
+            </div>
+
+            <div class="detail">
+              <span>自信度</span>
+              <b>
+                ${item.confidence || "-"}
+              </b>
+            </div>
+
+            <div class="detail">
+              <span>購入日</span>
+              <b>
+                ${getRaceDate(item) || "-"}
+              </b>
+            </div>
+
+            <div class="detail">
+              <span>買い目点数</span>
+              <b>
+                ${bets.length}点
+              </b>
+            </div>
+
+          </div>
+
+          <div class="bets">
+
+            <div class="bets-label">
+              推奨買い目
+            </div>
+
+            <div class="bet-list">
+              ${betsHtml}
+            </div>
+
+          </div>
+
+          <div class="actual-result">
+            ${
+              resultReady
+                ? `実際の結果：<b>${escapePageHtml(
+                    resultText
+                  )}</b>`
+                : resultText
+            }
+          </div>
+
+          <div class="delete-area">
+
+            <button
+              class="delete-button"
+              data-delete="${
+                item.key
+              }"
+              type="button"
+            >
+              この履歴を削除
+            </button>
+
+          </div>
+
+        </article>
+      `;
+    }
+
+    function renderPurchasedPage() {
+      const data =
+        getPurchasedPageData();
+
+      const items =
+        Object.values(data)
+          .sort(
+            (a, b) =>
+              safeTime(b.purchasedAt) -
+              safeTime(a.purchasedAt)
+          );
+
+      const filtered =
+        filterItems(items);
+
+      renderSummary(
+        filtered
+      );
+
+      const list =
+        document.getElementById(
+          "purchase-list"
+        );
+
+      if (!filtered.length) {
+
+        list.innerHTML = `
+          <div class="empty">
+
+            <div class="empty-title">
+              購入履歴はありません
+            </div>
+
+            <div class="empty-text">
+              予想一覧で「買った」を押すと、
+              ここに記録されます。
+            </div>
+
+          </div>
+        `;
+
+      } else {
+
+        list.innerHTML =
+          filtered
+            .map(
+              renderPurchase
+            )
+            .join("");
+
+      }
+
+      bindDeleteButtons();
+    }
+
+    function safeTime(value) {
+      const n =
+        Number(value);
+
+      return Number.isFinite(n)
+        ? n
+        : 0;
+    }
+
+    function bindDeleteButtons() {
+      document
+        .querySelectorAll(
+          "[data-delete]"
+        )
+        .forEach(
+          (button) => {
+
+            button.addEventListener(
+              "click",
+              () => {
+
+                const key =
+                  button.dataset.delete;
+
+                const data =
+                  getPurchasedPageData();
+
+                delete data[key];
+
+                localStorage.setItem(
+                  PURCHASED_KEY,
+                  JSON.stringify(
+                    data
+                  )
+                );
+
+                renderPurchasedPage();
+              }
+            );
+
+          }
+        );
+    }
+
+    document
+      .querySelectorAll(
+        ".period-tab"
+      )
+      .forEach(
+        (button) => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              selectedPeriod =
+                button.dataset.period;
+
+              document
+                .querySelectorAll(
+                  ".period-tab"
+                )
+                .forEach(
+                  (b) =>
+                    b.classList.toggle(
+                      "active",
+                      b === button
+                    )
+                );
+
+              renderPurchasedPage();
+            }
+          );
+
+        }
+      );
+
+    document
+      .getElementById(
+        "clear-all"
+      )
+      .addEventListener(
+        "click",
+        () => {
+
+          const data =
+            getPurchasedPageData();
+
+          if (
+            !Object.keys(data)
+              .length
+          ) {
+            return;
+          }
+
+          if (
+            !confirm(
+              "購入履歴をすべて削除しますか？"
+            )
+          ) {
+            return;
+          }
+
+          localStorage.removeItem(
+            PURCHASED_KEY
+          );
+
+          renderPurchasedPage();
+        }
+      );
+
+    renderPurchasedPage();
+
+  </script>
+
+  <script src="app.js?v=20260902-4"></script>
 
 </body>
 
