@@ -1,1593 +1,1199 @@
-const API =
-  "https://boatraceopenapi.github.io/api/v1/today.json";
+const API = "https://boatraceopenapi.github.io/api/v1/today.json";
 
 const STADIUMS = {
-  1:"桐生", 2:"戸田", 3:"江戸川", 4:"平和島",
-  5:"多摩川", 6:"浜名湖", 7:"蒲郡", 8:"常滑",
-  9:"津", 10:"三国", 11:"びわこ", 12:"住之江",
-  13:"尼崎", 14:"鳴門", 15:"丸亀", 16:"児島",
-  17:"宮島", 18:"徳山", 19:"下関", 20:"若松",
-  21:"芦屋", 22:"福岡", 23:"唐津", 24:"大村"
+  1:"桐生",
+  2:"戸田",
+  3:"江戸川",
+  4:"平和島",
+  5:"多摩川",
+  6:"浜名湖",
+  7:"蒲郡",
+  8:"常滑",
+  9:"津",
+  10:"三国",
+  11:"びわこ",
+  12:"住之江",
+  13:"尼崎",
+  14:"鳴門",
+  15:"丸亀",
+  16:"児島",
+  17:"宮島",
+  18:"徳山",
+  19:"下関",
+  20:"若松",
+  21:"芦屋",
+  22:"福岡",
+  23:"唐津",
+  24:"大村"
 };
 
-const $ = s => document.querySelector(s);
+const PURCHASE_KEY = "cyber_hatchan_purchased_v2";
+const PREDICTION_KEY = "cyber_hatchan_predictions_v2";
 
-const num = v => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-};
-
-const clamp = (v,a,b) =>
-  Math.max(a, Math.min(b,v));
-
-const esc = v =>
-  String(v ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+let allRaces = [];
+let selectedStadium = "all";
+let lastUpdated = null;
 
 
-function rankName(n) {
-  return ({
-    1:"A1",
-    2:"A2",
-    3:"B1",
-    4:"B2"
-  })[num(n)] || "-";
+/* =========================
+   基本ユーティリティ
+========================= */
+
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function num(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function now() {
+  return new Date();
+}
+
+function todayString() {
+  const d = now();
+
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${day}`;
+}
+
+function formatDateJP(date) {
+  if (!date) return "";
+
+  const d = new Date(date);
+
+  if (Number.isNaN(d.getTime())) return "";
+
+  return d.toLocaleString("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function cutoffDate(value) {
+  if (!value) return null;
+
+  const d = new Date(value);
+
+  if (Number.isNaN(d.getTime())) return null;
+
+  return d;
+}
+
+function isBeforeCutoff(race) {
+  const cutoff = cutoffDate(race.closed_at);
+
+  if (!cutoff) return true;
+
+  return cutoff.getTime() > now().getTime();
+}
+
+function minutesUntilCutoff(race) {
+  const cutoff = cutoffDate(race.closed_at);
+
+  if (!cutoff) return 9999;
+
+  return Math.round((cutoff.getTime() - now().getTime()) / 60000);
 }
 
 
-function fmtTime(v) {
-  if (!v) return "--:--";
-
-  const m =
-    String(v).match(/(\d{2}):(\d{2})/);
-
-  return m
-    ? `${m[1]}:${m[2]}`
-    : "--:--";
-}
-
-
-function gradeName(n) {
-
-  const g = num(n);
-
-  return ({
-    1:"SG",
-    2:"G1",
-    3:"G2",
-    4:"G3"
-  })[g] || "一般";
-}
-
-
-/* =================================
-   データ取得
-================================= */
-
-function getRacers(r) {
-
-  return Object.values(r.racers || {})
-    .sort(
-      (a,b) =>
-        num(a.entry_number) -
-        num(b.entry_number)
-    );
-}
-
-
-function getPreview(r) {
-  return r.preview?.racers || {};
-}
-
-
-/* =================================
-   キー
-================================= */
-
-function predictionKey(r) {
-
-  return [
-    r.date,
-    r.stadium_number,
-    r.race_number
-  ].join("-");
-
-}
-
-
-/* =================================
+/* =========================
    LocalStorage
-================================= */
+========================= */
 
-function readStore(name, defaultValue) {
-
+function getPurchased() {
   try {
-
-    return JSON.parse(
-      localStorage.getItem(name) ||
-      JSON.stringify(defaultValue)
-    );
-
+    return JSON.parse(localStorage.getItem(PURCHASE_KEY) || "[]");
+  } catch {
+    return [];
   }
-  catch (_) {
-
-    return defaultValue;
-
-  }
-
 }
 
+function savePurchased(list) {
+  localStorage.setItem(PURCHASE_KEY, JSON.stringify(list));
+}
 
-function writeStore(name, value) {
-
+function getPredictions() {
   try {
-
-    localStorage.setItem(
-      name,
-      JSON.stringify(value)
-    );
-
+    return JSON.parse(localStorage.getItem(PREDICTION_KEY) || "[]");
+  } catch {
+    return [];
   }
-  catch (_) {}
+}
 
+function savePredictions(list) {
+  localStorage.setItem(PREDICTION_KEY, JSON.stringify(list));
 }
 
 
-/* =================================
-   選手評価
-================================= */
+/* =========================
+   選手データ
+========================= */
 
-function playerScore(x) {
+function racerName(r) {
+  if (!r) return "不明";
 
-  let score = 0;
+  return (
+    r.name ||
+    r.racer_name ||
+    r.player_name ||
+    r.racerName ||
+    "不明"
+  );
+}
 
-  const rank =
-    num(x.rank_number);
+function racerClass(r) {
+  if (!r) return "";
 
-  const national =
-    num(x.national_win_rate);
+  return (
+    r.rank ||
+    r.class ||
+    r.grade ||
+    r.racer_rank ||
+    ""
+  );
+}
 
-  const top3 =
-    num(x.national_top_3_percent);
+function nationalWin(r) {
+  if (!r) return 0;
 
-  const local =
-    num(x.local_win_rate);
+  return num(
+    r.national_win_rate ??
+    r.national_win ??
+    r.win_rate ??
+    r.winRate
+  );
+}
 
-  const motor =
-    num(x.motor_top_3_percent);
+function national3(r) {
+  if (!r) return 0;
 
-  const st =
-    num(x.average_start_timing);
+  return num(
+    r.national_3rentai_rate ??
+    r.national_three_rate ??
+    r.national_3_rate ??
+    r.three_rate
+  );
+}
 
+function localWin(r) {
+  if (!r) return 0;
 
-  /*
-    級別
-  */
+  return num(
+    r.local_win_rate ??
+    r.local_win ??
+    r.localWinRate
+  );
+}
 
-  if (rank === 1) {
+function motor3(r) {
+  if (!r) return 0;
 
-    score += 27;
+  return num(
+    r.motor_3rentai_rate ??
+    r.motor_three_rate ??
+    r.motor_3_rate ??
+    r.motorRate
+  );
+}
 
-  }
-  else if (rank === 2) {
+function exhibitionTime(r) {
+  if (!r) return 0;
 
-    score += 19;
+  return num(
+    r.exhibition_time ??
+    r.exhibitionTime ??
+    r.exhibition
+  );
+}
 
-  }
-  else if (rank === 3) {
+function exhibitionST(r) {
+  if (!r) return 0;
 
-    score += 10;
+  return num(
+    r.start_timing ??
+    r.startTiming ??
+    r.st
+  );
+}
 
-  }
-  else if (rank === 4) {
+function previewCourse(r) {
+  if (!r) return 0;
 
-    score += 3;
-
-  }
-
-
-  /*
-    全国勝率
-  */
-
-  if (national !== null) {
-
-    score += clamp(
-      (national - 5.0) * 4.8,
-      -5,
-      14
-    );
-
-  }
-
-
-  /*
-    全国3連対率
-  */
-
-  if (top3 !== null) {
-
-    score += clamp(
-      (top3 - 50) * 0.20,
-      -5,
-      9
-    );
-
-  }
-
-
-  /*
-    当地勝率
-  */
-
-  if (local !== null) {
-
-    score += clamp(
-      (local - 5.0) * 2.2,
-      -4,
-      7
-    );
-
-  }
-
-
-  /*
-    モーター3連対率
-  */
-
-  if (motor !== null) {
-
-    score += clamp(
-      (motor - 40) * 0.10,
-      -3,
-      5
-    );
-
-  }
-
-
-  /*
-    平均ST
-  */
-
-  if (st !== null) {
-
-    if (st <= 0.12) {
-
-      score += 5;
-
-    }
-    else if (st <= 0.15) {
-
-      score += 2;
-
-    }
-    else if (st >= 0.20) {
-
-      score -= 4;
-
-    }
-
-  }
-
-
-  return score;
-
+  return num(
+    r.course ??
+    r.exhibition_course ??
+    r.start_course ??
+    r.lane
+  );
 }
 
 
-/* =================================
-   直前情報
-================================= */
+/* =========================
+   レース取得
+========================= */
 
-function previewScore(
-  p,
-  exhibitionAverage
-) {
+function normalizeRace(race, stadiumNumber) {
+  if (!race) return null;
 
-  let score = 0;
+  const racersSource =
+    race.racers ||
+    race.entries ||
+    race.players ||
+    {};
 
-  const course =
-    num(p?.course_number);
+  const previewSource =
+    race.preview?.racers ||
+    race.preview_racers ||
+    race.exhibition?.racers ||
+    {};
 
-  const exhibition =
-    num(p?.exhibition_time);
+  const racers = [];
 
-  const st =
-    num(p?.start_timing);
+  for (let i = 1; i <= 6; i++) {
 
+    let r = racersSource[i] ||
+            racersSource[String(i)] ||
+            null;
 
-  /*
-    進入
-  */
+    let p = previewSource[i] ||
+            previewSource[String(i)] ||
+            null;
 
-  if (course === 1) {
+    if (!r && !p) continue;
 
-    score += 9;
-
-  }
-  else if (course === 2) {
-
-    score += 3;
-
-  }
-  else if (course === 3) {
-
-    score += 2;
-
-  }
-
-
-  /*
-    展示ST
-  */
-
-  if (st !== null) {
-
-    if (st <= 0.10) {
-
-      score += 6;
-
-    }
-    else if (st <= 0.13) {
-
-      score += 3;
-
-    }
-    else if (st >= 0.20) {
-
-      score -= 4;
-
-    }
-
+    racers.push({
+      lane: i,
+      ...(r || {}),
+      preview: p || {}
+    });
   }
 
-
-  /*
-    展示タイム
-
-    レース内平均との差を使う。
-    絶対値だけで評価しない。
-  */
-
-  if (
-    exhibition !== null &&
-    exhibitionAverage !== null
-  ) {
-
-    score += clamp(
-      (exhibitionAverage - exhibition) * 35,
-      -5,
-      7
-    );
-
-  }
-
-
-  return score;
-
-}
-
-
-/* =================================
-   レース評価
-================================= */
-
-function scoreRace(r) {
-
-  const racers =
-    getRacers(r);
-
-  if (racers.length !== 6) {
-    return null;
-  }
-
-
-  const preview =
-    getPreview(r);
-
-
-  /*
-    展示タイム平均
-  */
-
-  const exhibitionTimes =
+  return {
+    date: race.date || todayString(),
+    stadium_number: num(
+      race.stadium_number || stadiumNumber,
+      stadiumNumber
+    ),
+    race_number: num(
+      race.race_number ||
+      race.raceNo ||
+      race.number
+    ),
+    closed_at: race.closed_at || race.closedAt || null,
+    grade_number: race.grade_number || race.grade || "",
+    title: race.title || "",
+    subtitle: race.subtitle || "",
+    day_number: race.day_number || race.day || "",
     racers
-      .map(x =>
-        num(
-          preview[
-            String(x.entry_number)
-          ]?.exhibition_time
-        )
-      )
-      .filter(x => x !== null);
+  };
+}
 
+function extractRaces(data) {
+  const result = [];
 
-  const exhibitionAverage =
-    exhibitionTimes.length >= 4
-      ? exhibitionTimes.reduce(
-          (a,b) => a + b,
-          0
-        ) / exhibitionTimes.length
-      : null;
+  const programs = data?.programs?.stadiums || {};
 
+  Object.keys(programs).forEach(stadiumKey => {
 
-  /*
-    全艇評価
-  */
+    const stadium = programs[stadiumKey];
 
-  const candidates =
-    racers.map(x => {
+    const stadiumNumber =
+      num(stadium.stadium_number || stadiumKey);
 
-      const no =
-        num(x.entry_number);
+    const races = stadium?.races || {};
 
-      const p =
-        preview[String(no)] || {};
+    Object.keys(races).forEach(raceKey => {
 
-
-      let total =
-        playerScore(x) +
-        previewScore(
-          p,
-          exhibitionAverage
+      const normalized =
+        normalizeRace(
+          races[raceKey],
+          stadiumNumber
         );
 
-
-      /*
-        1号艇補正
-      */
-
-      if (no === 1) {
-
-        const course =
-          num(p.course_number);
-
-        if (course === 1) {
-
-          total += 12;
-
-        }
-        else if (course === null) {
-
-          total += 5;
-
-        }
-        else {
-
-          total += 2;
-
-        }
-
+      if (
+        normalized &&
+        normalized.race_number
+      ) {
+        result.push(normalized);
       }
-
-
-      return {
-        x,
-        p,
-        total
-      };
-
     });
+  });
+
+  return result.sort((a, b) => {
+
+    if (a.stadium_number !== b.stadium_number) {
+      return a.stadium_number - b.stadium_number;
+    }
+
+    return a.race_number - b.race_number;
+  });
+}
 
 
-  candidates.sort(
-    (a,b) =>
-      b.total - a.total
+/* =========================
+   進入・展示情報
+========================= */
+
+function getPreview(race, lane) {
+
+  const racer = race.racers.find(
+    r => r.lane === lane
   );
 
+  if (!r) {
+    return {
+      course: 0,
+      st: 0,
+      time: 0
+    };
+  }
 
-  const first =
-    candidates[0];
+  const p = racer.preview || {};
 
-  const second =
-    candidates[1];
+  return {
+    course: previewCourse(p),
+    st: exhibitionST(p),
+    time: exhibitionTime(p)
+  };
+}
+
+function courseOrder(race) {
+
+  const arr = [];
+
+  race.racers.forEach(r => {
+
+    const p = getPreview(race, r.lane);
+
+    if (p.course >= 1 && p.course <= 6) {
+
+      arr.push({
+        lane: r.lane,
+        course: p.course
+      });
+    }
+  });
+
+  return arr.sort(
+    (a, b) => a.course - b.course
+  );
+}
+
+function hasChangedEntry(race) {
+
+  const order = courseOrder(race);
+
+  if (!order.length) return false;
+
+  const first = order[0];
+
+  return first.lane !== 1;
+}
 
 
-  if (!first || !second) {
+/* =========================
+   選手評価
+========================= */
+
+function playerScore(racer) {
+
+  if (!racer) return 0;
+
+  const win = nationalWin(racer);
+  const three = national3(racer);
+  const local = localWin(racer);
+  const motor = motor3(racer);
+
+  let score = 0;
+
+  score += clamp(win * 7, 0, 50);
+  score += clamp(three * 0.22, 0, 22);
+  score += clamp(local * 2, 0, 12);
+  score += clamp(motor * 0.12, 0, 12);
+
+  return score;
+}
+
+function previewScore(race, lane) {
+
+  const p = getPreview(race, lane);
+
+  let score = 0;
+
+  if (p.time > 0) {
+
+    if (p.time <= 6.65) {
+      score += 15;
+    } else if (p.time <= 6.75) {
+      score += 12;
+    } else if (p.time <= 6.85) {
+      score += 8;
+    } else if (p.time <= 6.95) {
+      score += 4;
+    }
+  }
+
+  if (p.st > 0) {
+
+    const abs = Math.abs(p.st);
+
+    if (abs <= 0.05) {
+      score += 10;
+    } else if (abs <= 0.10) {
+      score += 7;
+    } else if (abs <= 0.15) {
+      score += 4;
+    }
+  }
+
+  return score;
+}
+
+
+/* =========================
+   レース評価
+========================= */
+
+function scoreRace(race) {
+
+  const racers =
+    [...race.racers]
+      .sort((a, b) => a.lane - b.lane);
+
+  if (racers.length < 6) {
     return null;
   }
 
+  const scores = racers.map(r => {
 
-  const firstNo =
-    num(first.x.entry_number);
+    const base = playerScore(r);
 
-  const firstRank =
-    num(first.x.rank_number);
+    const preview =
+      previewScore(race, r.lane);
 
+    let laneBonus = 0;
 
-  const gap =
-    first.total -
-    second.total;
+    if (r.lane === 1) {
+      laneBonus = 22;
+    } else if (r.lane === 2) {
+      laneBonus = 12;
+    } else if (r.lane === 3) {
+      laneBonus = 10;
+    } else if (r.lane === 4) {
+      laneBonus = 8;
+    } else {
+      laneBonus = 3;
+    }
 
+    return {
+      lane: r.lane,
+      racer: r,
+      total: base + preview + laneBonus
+    };
+  });
 
-  const p1 =
-    preview["1"] || {};
+  scores.sort(
+    (a, b) => b.total - a.total
+  );
 
+  const first =
+    scores.find(x => x.lane === 1);
 
-  const course1 =
-    num(p1.course_number);
+  const best =
+    scores[0];
 
-  const st1 =
-    num(p1.start_timing);
+  const second =
+    scores.find(x => x.lane !== best.lane);
 
-  const exhibition1 =
-    num(p1.exhibition_time);
+  if (!first || !best || !second) {
+    return null;
+  }
 
-
-  const national =
-    num(first.x.national_win_rate);
-
-  const top3 =
-    num(first.x.national_top_3_percent);
-
-
-  const motor =
-    num(first.x.motor_top_3_percent);
-
-
-  /*
-    =================================
-    信頼度
-    =================================
-
-    以前のように99へ集中しないよう、
-    複数要素をバランスさせて45〜96にする。
-  */
+  const margin =
+    best.total - second.total;
 
   let confidence = 45;
 
-
-  /*
-    本命選手そのものの強さ
-  */
+  confidence +=
+    clamp(first.total * 0.42, 0, 30);
 
   confidence +=
-    clamp(
-      playerScore(first.x) * 0.58,
-      0,
-      30
-    );
+    clamp(margin * 0.85, 0, 15);
 
+  const p1 =
+    getPreview(race, 1);
 
-  /*
-    相手との差
-  */
+  if (p1.time > 0) {
 
-  confidence +=
-    clamp(
-      gap * 0.65,
-      0,
-      18
-    );
-
-
-  /*
-    直前情報
-  */
-
-  confidence +=
-    clamp(
-      previewScore(
-        first.p,
-        exhibitionAverage
-      ) * 0.55,
-      -4,
-      10
-    );
-
-
-  /*
-    1号艇
-  */
-
-  if (
-    firstNo === 1 &&
-    course1 === 1
-  ) {
-
-    confidence += 8;
-
+    if (p1.time <= 6.70) {
+      confidence += 7;
+    } else if (p1.time <= 6.80) {
+      confidence += 4;
+    }
   }
 
-
-  /*
-    展示ST
-  */
-
-  if (
-    st1 !== null &&
-    st1 <= 0.12
-  ) {
-
-    confidence += 4;
-
+  if (hasChangedEntry(race)) {
+    confidence -= 5;
   }
 
+  const remaining =
+    minutesUntilCutoff(race);
 
-  /*
-    展示タイム
-  */
-
-  if (
-    exhibition1 !== null &&
-    exhibitionAverage !== null &&
-    exhibition1 <=
-      exhibitionAverage - 0.05
-  ) {
-
-    confidence += 3;
-
+  if (remaining >= 0 && remaining <= 10) {
+    confidence -= 2;
   }
-
-
-  /*
-    1号艇以外は慎重に
-  */
-
-  if (firstNo !== 1) {
-
-    confidence -= 7;
-
-  }
-
-
-  /*
-    1号艇がインを取れていない
-  */
-
-  if (
-    firstNo === 1 &&
-    course1 !== null &&
-    course1 !== 1
-  ) {
-
-    confidence -= 10;
-
-  }
-
 
   confidence =
     Math.round(
-      clamp(
-        confidence,
-        45,
-        96
-      )
+      clamp(confidence, 45, 96)
     );
 
+  let level = "候補";
 
-  /* =================================
-     固いレース判定
-  ================================= */
-
-  let hard = false;
-
-
-  /*
-    基本条件
-  */
-
-  if (
-    firstNo === 1 &&
-    (course1 === null || course1 === 1) &&
-    (firstRank === 1 || firstRank === 2) &&
-    national !== null &&
-    national >= 6.00 &&
-    top3 !== null &&
-    top3 >= 55 &&
-    gap >= 10 &&
-    confidence >= 68
-  ) {
-
-    hard = true;
-
-  }
-
-
-  /*
-    かなり強い1号艇
-  */
-
-  if (
-    firstNo === 1 &&
-    (course1 === null || course1 === 1) &&
-    national !== null &&
-    national >= 6.50 &&
-    top3 !== null &&
-    top3 >= 60 &&
-    gap >= 16 &&
-    confidence >= 76
-  ) {
-
-    hard = true;
-
-  }
-
-
-  /*
-    モーターが極端に悪い場合
-  */
-
-  if (
-    firstNo === 1 &&
-    motor !== null &&
-    motor < 25 &&
-    gap < 18
-  ) {
-
-    hard = false;
-
-  }
-
-
-  /*
-    インなのに展示STが悪い
-  */
-
-  if (
-    firstNo === 1 &&
-    course1 === 1 &&
-    st1 !== null &&
-    st1 >= 0.20 &&
-    gap < 18
-  ) {
-
-    hard = false;
-
-  }
-
-
-  /*
-    1号艇がインを取れていない
-  */
-
-  if (
-    firstNo === 1 &&
-    course1 !== null &&
-    course1 !== 1
-  ) {
-
-    hard = false;
-
-  }
-
-
-  /*
-    信頼度が低い場合
-  */
-
-  if (confidence < 68) {
-
-    hard = false;
-
-  }
-
-
-  /*
-    レベル
-  */
-
-  let level = "";
-
-
-  /*
-    激アツ
-
-    条件をかなり厳しくする。
-  */
-
-  if (
-    hard &&
-    firstNo === 1 &&
-    course1 === 1 &&
-    firstRank === 1 &&
-    national !== null &&
-    national >= 6.50 &&
-    top3 !== null &&
-    top3 >= 60 &&
-    confidence >= 86 &&
-    gap >= 18
-  ) {
-
+  if (confidence >= 88 && margin >= 8) {
     level = "激アツ";
-
-  }
-  else if (
-    hard &&
-    confidence >= 76
-  ) {
-
+  } else if (confidence >= 78) {
     level = "本命";
-
-  }
-  else if (
-    hard &&
-    confidence >= 68
-  ) {
-
+  } else if (confidence >= 68) {
     level = "有力";
-
   }
 
+  const firstIs1 =
+    best.lane === 1;
 
-  /*
-    推奨なし
-  */
+  let show = false;
 
-  if (!level) {
-    return null;
+  if (
+    confidence >= 60 &&
+    firstIs1
+  ) {
+    show = true;
   }
 
+  if (
+    confidence >= 58 &&
+    margin >= 5
+  ) {
+    show = true;
+  }
 
-  /* =================================
-     2・3着候補
-  ================================= */
+  if (
+    confidence < 58 &&
+    margin < 3
+  ) {
+    show = false;
+  }
 
-  const places =
-    candidates
-      .filter(x => x !== first)
-      .slice(0,4);
+  const hot =
+    confidence >= 88 &&
+    margin >= 8 &&
+    firstIs1;
 
-
-  const a =
-    places[0]
-      ? num(places[0].x.entry_number)
-      : null;
-
-  const b =
-    places[1]
-      ? num(places[1].x.entry_number)
-      : null;
-
-  const c =
-    places[2]
-      ? num(places[2].x.entry_number)
-      : null;
-
-
-  /*
-    買い目
-  */
+  const opponent =
+    scores
+      .filter(x => x.lane !== best.lane)
+      .slice(0, 3);
 
   const bets = [];
 
+  const opponentLanes =
+    opponent.map(x => x.lane);
 
-  if (a && b) {
+  if (best.lane === 1) {
+
+    opponentLanes.forEach(lane => {
+
+      bets.push(`1-${lane}-2`);
+      bets.push(`1-${lane}-3`);
+
+    });
+
+    bets.push("1-2-3");
+    bets.push("1-3-2");
+
+  } else {
 
     bets.push(
-      `${firstNo}-${a}-${b}`
+      `${best.lane}-1-2`
     );
 
     bets.push(
-      `${firstNo}-${b}-${a}`
+      `${best.lane}-1-3`
     );
 
+    bets.push(
+      `${best.lane}-2-1`
+    );
   }
-
-
-  if (a && c) {
-
-    bets.push(
-      `${firstNo}-${a}-${c}`
-    );
-
-    bets.push(
-      `${firstNo}-${c}-${a}`
-    );
-
-  }
-
-
-  /* =================================
-     理由
-  ================================= */
 
   const reasons = [];
 
-
-  if (firstRank !== null) {
-
-    reasons.push(
-      rankName(firstRank)
-    );
-
+  if (firstIs1) {
+    reasons.push("1号艇を軸評価");
   }
 
-
-  if (national !== null) {
-
-    reasons.push(
-      `全国勝率${national.toFixed(2)}`
-    );
-
+  if (margin >= 8) {
+    reasons.push("相手との差が大きい");
+  } else if (margin >= 5) {
+    reasons.push("相手との差を確保");
   }
 
+  if (p1.time > 0) {
 
-  if (top3 !== null) {
-
-    reasons.push(
-      `3連対率${top3.toFixed(1)}%`
-    );
-
+    if (p1.time <= 6.70) {
+      reasons.push("展示タイム良好");
+    } else if (p1.time <= 6.80) {
+      reasons.push("展示タイムまずまず");
+    }
   }
 
+  if (p1.st !== 0) {
 
-  const local =
-    num(first.x.local_win_rate);
-
-  if (local !== null) {
-
-    reasons.push(
-      `当地${local.toFixed(2)}`
-    );
-
+    if (Math.abs(p1.st) <= 0.10) {
+      reasons.push("展示ST良好");
+    }
   }
 
-
-  if (motor !== null) {
-
-    reasons.push(
-      `モーター3連対率${motor.toFixed(1)}%`
-    );
-
+  if (hasChangedEntry(race)) {
+    reasons.push("展示で進入変化あり");
   }
 
-
-  if (course1 !== null) {
-
-    reasons.push(
-      `進入${course1}`
-    );
-
+  if (!reasons.length) {
+    reasons.push("選手成績を総合評価");
   }
-
-
-  if (exhibition1 !== null) {
-
-    reasons.push(
-      `展示${exhibition1.toFixed(2)}`
-    );
-
-  }
-
-
-  if (st1 !== null) {
-
-    reasons.push(
-      `ST${st1.toFixed(2)}`
-    );
-
-  }
-
-
-  const signature = [
-    firstNo,
-    course1 ?? "",
-    exhibition1 ?? "",
-    st1 ?? "",
-    a ?? "",
-    b ?? "",
-    c ?? ""
-  ].join("|");
-
 
   return {
+    ...race,
 
-    race: r,
-    racers,
-    candidates,
-    first,
-    places,
+    scores,
+
+    bestLane: best.lane,
+
     confidence,
+
+    margin,
+
     level,
-    bets,
-    reasons,
-    signature,
-    gap
 
+    hot,
+
+    show,
+
+    bets: [...new Set(bets)].slice(0, 6),
+
+    reason: reasons.join("・"),
+
+    bestRacer: best.racer,
+
+    opponent
   };
-
 }
 
 
-/* =================================
-   予想履歴
-================================= */
-
-function getPrevious(key) {
-
-  const all =
-    readStore(
-      "boatPredictions",
-      {}
-    );
-
-  return all[key] || null;
-
-}
-
-
-function savePrediction(
-  key,
-  data
-) {
-
-  const all =
-    readStore(
-      "boatPredictions",
-      {}
-    );
-
-  all[key] = data;
-
-  writeStore(
-    "boatPredictions",
-    all
-  );
-
-}
-
-
-/* =================================
+/* =========================
    予想変更理由
-================================= */
+========================= */
 
-function changeReason(
-  previous,
-  current
-) {
+function predictionId(item) {
 
-  if (!previous) {
-    return "";
-  }
-
-
-  if (
-    previous.first !==
-    current.first
-  ) {
-
-    return "1着本命が変更されました。";
-
-  }
-
-
-  if (
-    previous.course !==
-    current.course
-  ) {
-
-    return "進入コースが変わりました。";
-
-  }
-
-
-  if (
-    previous.exhibition !==
-    current.exhibition
-  ) {
-
-    return "展示タイムが更新されました。";
-
-  }
-
-
-  if (
-    previous.st !==
-    current.st
-  ) {
-
-    return "展示STが更新されました。";
-
-  }
-
-
-  if (
-    previous.signature !==
-    current.signature
-  ) {
-
-    return "直前情報が更新されました。";
-
-  }
-
-
-  return "";
-
+  return [
+    item.date,
+    item.stadium_number,
+    item.race_number
+  ].join("_");
 }
 
+function getPreviousPrediction(item) {
 
-/* =================================
-   締切判定
-================================= */
+  const list = getPredictions();
 
-function isPastCutoff(r) {
-
-  if (!r.closed_at) {
-    return false;
-  }
-
-
-  const d =
-    new Date(r.closed_at);
-
-
-  if (
-    Number.isNaN(
-      d.getTime()
-    )
-  ) {
-
-    return false;
-
-  }
-
-
-  return d.getTime() <
-    Date.now();
-
+  return list.find(
+    x => x.id === predictionId(item)
+  );
 }
 
+function buildChangeReason(previous, current) {
 
-/* =================================
-   結果保存
-================================= */
+  if (!previous) return "";
 
-function saveResult(r) {
+  const reasons = [];
 
-  try {
+  if (
+    previous.bestLane !==
+    current.bestLane
+  ) {
+    reasons.push(
+      `本命が${previous.bestLane}号艇→${current.bestLane}号艇に変更`
+    );
+  }
 
-    const trifecta =
-      r.result?.payouts?.trifecta;
+  if (
+    Math.abs(
+      num(previous.confidence) -
+      num(current.confidence)
+    ) >= 5
+  ) {
+    reasons.push(
+      `自信度が${previous.confidence}→${current.confidence}に変化`
+    );
+  }
 
+  if (
+    previous.hasChangedEntry !==
+    hasChangedEntry(current)
+  ) {
+    reasons.push(
+      "展示の進入体系が変化"
+    );
+  }
 
-    if (
-      !Array.isArray(trifecta) ||
-      !trifecta[0]?.combination
-    ) {
+  if (
+    previous.exhibitionTime1 !==
+    getPreview(current, 1).time
+  ) {
+    reasons.push(
+      "1号艇の展示タイムが変化"
+    );
+  }
 
-      return;
+  if (
+    previous.exhibitionST1 !==
+    getPreview(current, 1).st
+  ) {
+    reasons.push(
+      "展示STが変化"
+    );
+  }
 
-    }
+  return reasons.join("・");
+}
 
+function savePrediction(item) {
 
-    const all =
-      readStore(
-        "boatResults",
-        {}
-      );
+  const list =
+    getPredictions();
 
+  const id =
+    predictionId(item);
 
-    const k =
-      predictionKey(r);
+  const previous =
+    list.find(x => x.id === id);
 
+  const p1 =
+    getPreview(item, 1);
 
-    all[k] = {
-
-      combination:
-        trifecta[0].combination,
-
-      savedAt:
-        new Date().toISOString()
-
-    };
-
-
-    writeStore(
-      "boatResults",
-      all
+  const changeReason =
+    buildChangeReason(
+      previous,
+      item
     );
 
+  const record = {
 
-    /*
-      購入済みデータにも結果を反映
-    */
+    id,
 
-    const purchased =
-      readStore(
-        "boatPurchased",
-        {}
-      );
-
-
-    if (purchased[k]) {
-
-      purchased[k].result =
-        trifecta[0].combination;
-
-      writeStore(
-        "boatPurchased",
-        purchased
-      );
-
-    }
-
-  }
-  catch (_) {}
-
-}
-
-
-/* =================================
-   購入済み判定
-================================= */
-
-function isPurchased(k) {
-
-  const all =
-    readStore(
-      "boatPurchased",
-      {}
-    );
-
-  return !!all[k];
-
-}
-
-
-/* =================================
-   購入登録
-================================= */
-
-function purchaseRace(item) {
-
-  const r =
-    item.race;
-
-  const k =
-    predictionKey(r);
-
-
-  const all =
-    readStore(
-      "boatPurchased",
-      {}
-    );
-
-
-  if (all[k]) {
-    return;
-  }
-
-
-  all[k] = {
-
-    key:k,
-
-    date:r.date,
+    date: item.date,
 
     stadium_number:
-      num(r.stadium_number),
+      item.stadium_number,
 
     race_number:
-      num(r.race_number),
+      item.race_number,
 
-    stadium:
-      STADIUMS[
-        num(r.stadium_number)
-      ] ||
-      `場${r.stadium_number}`,
-
-    title:
-      r.title || "",
-
-    subtitle:
-      r.subtitle || "",
-
-    closed_at:
-      r.closed_at || "",
-
-    level:
-      item.level,
+    bestLane:
+      item.bestLane,
 
     confidence:
       item.confidence,
 
-    first:
-      num(item.first.x.entry_number),
+    level:
+      item.level,
 
-    firstName:
-      item.first.x.name || "",
+    exhibitionTime1:
+      p1.time,
 
-    bets:
-      [...item.bets],
+    exhibitionST1:
+      p1.st,
 
-    boughtAt:
-      new Date().toISOString(),
+    hasChangedEntry:
+      hasChangedEntry(item),
 
-    result:null
+    changeReason,
 
+    updatedAt:
+      new Date().toISOString()
   };
 
+  const index =
+    list.findIndex(
+      x => x.id === id
+    );
 
-  writeStore(
-    "boatPurchased",
-    all
-  );
+  if (index >= 0) {
+    list[index] = record;
+  } else {
+    list.push(record);
+  }
 
+  savePredictions(list);
 
-  renderPurchaseState(
-    k
-  );
-
+  return changeReason;
 }
 
 
-/* =================================
-   購入ボタン状態
-================================= */
+/* =========================
+   購入済み
+========================= */
 
-function renderPurchaseState(k) {
+function purchaseId(item) {
 
-  const buttons =
-    document.querySelectorAll(
-      `[data-buy-key="${CSS.escape(k)}"]`
+  return predictionId(item);
+}
+
+function isPurchased(item) {
+
+  const list =
+    getPurchased();
+
+  return list.some(
+    x => x.id === purchaseId(item)
+  );
+}
+
+function markPurchased(item) {
+
+  const list =
+    getPurchased();
+
+  const id =
+    purchaseId(item);
+
+  const exists =
+    list.find(
+      x => x.id === id
     );
 
+  if (exists) return;
 
-  const purchased =
-    isPurchased(k);
+  list.push({
 
+    id,
 
-  buttons.forEach(btn => {
+    date: item.date,
 
-    btn.textContent =
-      purchased
-        ? "購入済み"
-        : "買った";
+    stadium_number:
+      item.stadium_number,
 
-    btn.classList.toggle(
-      "purchased",
-      purchased
-    );
+    race_number:
+      item.race_number,
 
-    btn.disabled =
-      purchased;
+    closed_at:
+      item.closed_at,
+
+    title:
+      item.title,
+
+    subtitle:
+      item.subtitle,
+
+    confidence:
+      item.confidence,
+
+    level:
+      item.level,
+
+    bestLane:
+      item.bestLane,
+
+    bestName:
+      racerName(item.bestRacer),
+
+    bets:
+      item.bets,
+
+    purchasedAt:
+      new Date().toISOString(),
+
+    result:
+      null
 
   });
 
-
-  updatePurchasedCount();
-
+  savePurchased(list);
 }
 
 
-/* =================================
-   購入数
-================================= */
+/* =========================
+   結果判定
+========================= */
 
-function updatePurchasedCount() {
+function normalizeResult(result) {
 
-  const all =
-    readStore(
-      "boatPurchased",
-      {}
-    );
+  if (!result) return null;
 
+  const candidates = [
+    result,
+    result.result,
+    result.results
+  ];
 
-  const count =
-    Object.keys(all).length;
+  let obj = candidates.find(
+    x => x && typeof x === "object"
+  );
 
+  if (!obj) return null;
 
-  const el =
-    $("#purchased-count");
+  let order = [];
 
-
-  if (el) {
-
-    el.textContent =
-      count
-        ? `購入済み ${count}`
-        : "購入済み";
-
+  if (Array.isArray(obj)) {
+    order = obj;
   }
 
-}
-
-
-/* =================================
-   買い目表示
-================================= */
-
-function renderBet(combo) {
-
-  const p =
-    combo.split("-");
-
-
-  if (p.length !== 3) {
-    return "";
+  if (
+    Array.isArray(obj.order)
+  ) {
+    order = obj.order;
   }
 
+  if (
+    Array.isArray(obj.arrival)
+  ) {
+    order = obj.arrival;
+  }
 
-  return `
-    <div class="bet">
-      ${esc(p[0])}
-      <i>→</i>
-      ${esc(p[1])}
-      <i>→</i>
-      ${esc(p[2])}
-    </div>
-  `;
+  if (
+    Array.isArray(obj.rank)
+  ) {
+    order = obj.rank;
+  }
 
+  if (!order.length) {
+
+    const keys = [
+      "first",
+      "second",
+      "third"
+    ];
+
+    keys.forEach(k => {
+
+      if (obj[k] != null) {
+        order.push(
+          num(
+            obj[k],
+            0
+          )
+        );
+      }
+
+    });
+  }
+
+  order =
+    order
+      .map(x => {
+
+        if (
+          typeof x === "object"
+        ) {
+          return num(
+            x.lane ||
+            x.course ||
+            x.number
+          );
+        }
+
+        return num(x);
+      })
+      .filter(
+        x => x >= 1 && x <= 6
+      );
+
+  return {
+    order
+  };
+}
+
+function isHit(purchased, result) {
+
+  if (
+    !result ||
+    !result.order ||
+    result.order.length < 3
+  ) {
+    return null;
+  }
+
+  const first =
+    result.order[0];
+
+  const bets =
+    purchased.bets || [];
+
+  for (const bet of bets) {
+
+    const parts =
+      String(bet)
+        .split("-")
+        .map(Number);
+
+    if (parts.length !== 3) {
+      continue;
+    }
+
+    if (
+      parts[0] === first &&
+      parts[1] === result.order[1] &&
+      parts[2] === result.order[2]
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 
-/* =================================
-   レースカード
-================================= */
+/* =========================
+   表示用
+========================= */
+
+function gradeText(value) {
+
+  const n =
+    String(value || "")
+      .toUpperCase();
+
+  if (n.includes("SG")) return "SG";
+
+  if (n.includes("G1")) return "G1";
+
+  if (n.includes("G2")) return "G2";
+
+  if (n.includes("G3")) return "G3";
+
+  if (n.includes("一般")) return "一般";
+
+  if (n) return n;
+
+  return "";
+}
+
+function renderRacers(item) {
+
+  return item.racers
+    .slice()
+    .sort(
+      (a, b) => a.lane - b.lane
+    )
+    .map(r => {
+
+      const p =
+        getPreview(
+          item,
+          r.lane
+        );
+
+      return `
+        <div class="racer">
+
+          <div class="racer-no">
+            ${r.lane}
+          </div>
+
+          <div class="racer-info">
+
+            <b>
+              ${esc(racerName(r))}
+            </b>
+
+            <span>
+              ${esc(racerClass(r))}
+              全国 ${nationalWin(r).toFixed(2)}
+              /3連 ${national3(r).toFixed(1)}%
+              ${p.course ? `/進${p.course}` : ""}
+            </span>
+
+          </div>
+
+          <div class="racer-time">
+            ${
+              p.time
+                ? p.time.toFixed(2)
+                : "-"
+            }
+          </div>
+
+        </div>
+      `;
+
+    })
+    .join("");
+}
 
 function renderRace(item) {
 
-  const r =
-    item.race;
+  const purchased =
+    isPurchased(item);
 
-
-  const stadium =
-    STADIUMS[
-      num(r.stadium_number)
-    ] ||
-    `場${r.stadium_number}`;
-
-
-  const raceNo =
-    num(r.race_number);
-
-
-  const first =
-    item.first.x;
-
-
-  const firstNo =
-    num(first.entry_number);
-
-
-  const firstName =
-    first.name ||
-    "選手名不明";
-
-
-  const second =
-    item.places[0];
-
-
-  const third =
-    item.places[1];
-
-
-  const bets =
-    item.bets
-      .map(renderBet)
-      .join("");
-
-
-  const racers =
-    item.racers
-      .map(x => {
-
-        const no =
-          num(x.entry_number);
-
-
-        const p =
-          getPreview(r)[String(no)] ||
-          {};
-
-
-        const course =
-          num(p.course_number);
-
-
-        const exhibition =
-          num(p.exhibition_time);
-
-
-        return `
-          <div class="racer">
-
-            <div class="racer-no">
-              ${no}
-            </div>
-
-            <div class="racer-info">
-
-              <b>
-                ${esc(x.name)}
-              </b>
-
-              <span>
-                ${rankName(x.rank_number)}
-                ${
-                  course !== null
-                    ? ` / ${course}コース`
-                    : ""
-                }
-              </span>
-
-            </div>
-
-            <div class="racer-time">
-              ${
-                exhibition !== null
-                  ? exhibition.toFixed(2)
-                  : "--"
-              }
-            </div>
-
-          </div>
-        `;
-
-      })
-      .join("");
-
-
-  const k =
-    predictionKey(r);
-
-
-  const previous =
-    getPrevious(k);
-
-
-  const p1 =
-    getPreview(r)["1"] ||
-    {};
-
-
-  const current = {
-
-    first:firstNo,
-
-    course:
-      num(p1.course_number),
-
-    exhibition:
-      num(p1.exhibition_time),
-
-    st:
-      num(p1.start_timing),
-
-    signature:
-      item.signature,
-
-    bets:
-      item.bets
-
-  };
-
-
-  const reason =
-    changeReason(
-      previous,
-      current
+  const grade =
+    gradeText(
+      item.grade_number
     );
 
+  const cutoff =
+    cutoffDate(
+      item.closed_at
+    );
 
-  savePrediction(
-    k,
-    current
-  );
+  const cutoffText =
+    cutoff
+      ? cutoff.toLocaleTimeString(
+          "ja-JP",
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        )
+      : "--:--";
 
+  const best =
+    item.bestRacer;
 
-  const purchased =
-    isPurchased(k);
+  const opponentText =
+    item.opponent
+      .slice(0, 3)
+      .map(
+        x =>
+          `${x.lane}号艇 ${racerName(x.racer)}`
+      )
+      .join(" / ");
 
+  const change =
+    getPreviousPrediction(item)
+      ?.changeReason || "";
 
   return `
     <article
-      class="
-        race-card
-        ${
-          item.level === "激アツ"
-            ? "hot"
-            : ""
-        }
-      "
+      class="race-card ${item.hot ? "hot" : ""}"
+      data-id="${esc(predictionId(item))}"
     >
 
       <div class="race-top">
@@ -1595,71 +1201,52 @@ function renderRace(item) {
         <div>
 
           <div class="race-title">
+            ${STADIUMS[item.stadium_number] || "不明"}
+            ${item.race_number}R
 
-            ${esc(stadium)}
-            ${raceNo}R
-
-            <span class="grade">
-              ${esc(
-                gradeName(
-                  r.grade_number
-                )
-              )}
-            </span>
-
+            ${
+              grade
+                ? `<span class="grade">${esc(grade)}</span>`
+                : ""
+            }
           </div>
 
+          <div class="event-title">
+            ${esc(item.title)}
+          </div>
 
           ${
-            r.title
-              ? `
-                <div class="event-title">
-                  ${esc(r.title)}
-                </div>
-              `
-              : ""
-          }
-
-
-          ${
-            r.subtitle
+            item.subtitle
               ? `
                 <div class="subtitle">
-                  ${esc(r.subtitle)}
+                  ${esc(item.subtitle)}
                 </div>
               `
               : ""
           }
 
-
           <div class="deadline">
-            締切 ${fmtTime(r.closed_at)}
+            締切 ${cutoffText}
           </div>
 
         </div>
 
-
         <div class="confidence">
 
-          <div
-            class="
-              level
-              ${
-                item.level === "激アツ"
-                  ? "hot-level"
-                  : ""
-              }
-            "
-          >
+          <span class="level ${
+            item.hot
+              ? "hot-level"
+              : ""
+          }">
             ${esc(item.level)}
-          </div>
+          </span>
 
           <strong>
             ${item.confidence}
           </strong>
 
           <small>
-            信頼度
+            自信度
           </small>
 
         </div>
@@ -1670,18 +1257,16 @@ function renderRace(item) {
       <div class="main-pick">
 
         <div class="pick-label">
-          1着本命
+          本命
         </div>
 
         <div class="pick-name">
-          ${firstNo}号艇
-          ${esc(firstName)}
+          ${item.bestLane}号艇
+          ${esc(racerName(best))}
         </div>
 
         <div class="pick-reason">
-          ${esc(
-            item.reasons.join(" / ")
-          )}
+          ${esc(item.reason)}
         </div>
 
       </div>
@@ -1691,37 +1276,52 @@ function renderRace(item) {
 
         <div>
 
-          <b>
-            2着候補
-          </b>
+          <b>相手筆頭</b>
+
+          ${esc(opponentText)}
+
+        </div>
+
+        <div>
+
+          <b>展示進入</b>
 
           ${
-            second
-              ? `
-                ${num(second.x.entry_number)}
-                号艇
-                ${esc(second.x.name)}
-              `
-              : "-"
+            courseOrder(item)
+              .map(
+                x =>
+                  `${x.course}:${x.lane}`
+              )
+              .join(" ")
+              || "データなし"
           }
 
         </div>
 
+      </div>
 
-        <div>
 
-          <b>
-            3着候補
-          </b>
+      <div class="bets">
+
+        <div class="bets-title">
+          推奨買い目
+        </div>
+
+        <div class="bet-list">
 
           ${
-            third
-              ? `
-                ${num(third.x.entry_number)}
-                号艇
-                ${esc(third.x.name)}
-              `
-              : "-"
+            item.bets
+              .map(
+                bet =>
+                  `<div class="bet">
+                    ${esc(
+                      bet
+                        .split("-")
+                        .join(" - ")
+                    )}
+                  </div>`
+              )
+              .join("")
           }
 
         </div>
@@ -1730,572 +1330,361 @@ function renderRace(item) {
 
 
       ${
-        bets
-          ? `
-            <div class="bets">
-
-              <div class="bets-title">
-                推奨買い目
-              </div>
-
-              <div class="bet-list">
-                ${bets}
-              </div>
-
-            </div>
-          `
-          : ""
-      }
-
-
-      ${
-        reason
+        change
           ? `
             <div class="change">
-
-              <b>
-                予想変更
-              </b>
-
-              <span>
-                ${esc(reason)}
-              </span>
-
+              <b>予想変更</b>
+              <span>${esc(change)}</span>
             </div>
           `
           : ""
       }
-
-
-      <button
-        type="button"
-        class="
-          buy-button
-          ${purchased ? "purchased" : ""}
-        "
-        data-buy-key="${esc(k)}"
-        ${purchased ? "disabled" : ""}
-      >
-        ${
-          purchased
-            ? "購入済み"
-            : "買った"
-        }
-      </button>
 
 
       <div class="racers">
-        ${racers}
+
+        ${renderRacers(item)}
+
+      </div>
+
+
+      <div class="buy-area">
+
+        <div class="buy-note">
+          購入済みにすると結果・的中率を記録
+        </div>
+
+        <button
+          class="buy-button ${
+            purchased
+              ? "purchased"
+              : ""
+          }"
+          type="button"
+          onclick="handlePurchase('${esc(
+            predictionId(item)
+          )}')"
+        >
+          ${
+            purchased
+              ? "購入済み"
+              : "買った"
+          }
+        </button>
+
       </div>
 
     </article>
   `;
-
 }
 
 
-/* =================================
-   開催場タブ
-================================= */
+/* =========================
+   購入ボタン
+========================= */
 
-function renderTabs(groups) {
+window.handlePurchase = function(id) {
 
-  if (!groups.length) {
-    return "";
-  }
-
-
-  let html = `
-    <div class="stadium-tabs">
-  `;
-
-
-  groups.forEach(
-    (group,index) => {
-
-      html += `
-        <button
-          class="
-            stadium-tab
-            ${
-              index === 0
-                ? "active"
-                : ""
-            }
-          "
-          data-stadium="${group.number}"
-        >
-
-          <span>
-            ${esc(group.name)}
-          </span>
-
-          <small>
-            ${group.races.length}R
-          </small>
-
-        </button>
-      `;
-
-    }
-  );
-
-
-  html += `
-    </div>
-
-    <div
-      id="stadium-content"
-      class="stadium-content"
-    ></div>
-  `;
-
-
-  return html;
-
-}
-
-
-/* =================================
-   タブ設定
-================================= */
-
-function setupTabs(groups) {
-
-  const tabs =
-    document.querySelectorAll(
-      ".stadium-tab"
+  const item =
+    allRaces.find(
+      x => predictionId(x) === id
     );
 
+  if (!item) return;
 
-  const content =
-    document.querySelector(
-      "#stadium-content"
-    );
-
-
-  if (
-    !tabs.length ||
-    !content
-  ) {
-
+  if (isPurchased(item)) {
     return;
-
   }
 
+  markPurchased(item);
 
-  function show(number) {
-
-    const group =
-      groups.find(
-        x =>
-          String(x.number) ===
-          String(number)
-      );
+  renderMain();
+};
 
 
-    if (!group) {
-      return;
-    }
+/* =========================
+   場タブ
+========================= */
 
+function renderStadiumTabs(items) {
 
-    tabs.forEach(tab => {
-
-      tab.classList.toggle(
-        "active",
-        String(
-          tab.dataset.stadium
-        ) === String(number)
-      );
-
-    });
-
-
-    content.innerHTML =
-      group.races
-        .sort(
-          (a,b) =>
-            b.confidence -
-            a.confidence
+  const stadiumNumbers =
+    [
+      ...new Set(
+        items.map(
+          x => x.stadium_number
         )
-        .map(renderRace)
-        .join("");
-
-
-    setupBuyButtons();
-
-  }
-
-
-  tabs.forEach(tab => {
-
-    tab.addEventListener(
-      "click",
-      () => {
-
-        show(
-          tab.dataset.stadium
-        );
-
-      }
+      )
+    ]
+    .sort(
+      (a, b) => a - b
     );
+
+  return `
+    <div class="stadium-tabs">
+
+      <button
+        class="stadium-tab ${
+          selectedStadium === "all"
+            ? "active"
+            : ""
+        }"
+        onclick="selectStadium('all')"
+      >
+        <span>全場</span>
+        <small>${items.length}レース</small>
+      </button>
+
+      ${
+        stadiumNumbers
+          .map(n => {
+
+            const count =
+              items.filter(
+                x =>
+                  x.stadium_number === n
+              ).length;
+
+            return `
+              <button
+                class="stadium-tab ${
+                  selectedStadium === String(n)
+                    ? "active"
+                    : ""
+                }"
+                onclick="selectStadium('${n}')"
+              >
+
+                <span>
+                  ${esc(
+                    STADIUMS[n] || n
+                  )}
+                </span>
+
+                <small>
+                  ${count}レース
+                </small>
+
+              </button>
+            `;
+
+          })
+          .join("")
+      }
+
+    </div>
+  `;
+}
+
+window.selectStadium = function(value) {
+
+  selectedStadium =
+    String(value);
+
+  renderMain();
+};
+
+
+/* =========================
+   メイン表示
+========================= */
+
+function renderMain() {
+
+  const container =
+    document.getElementById(
+      "picks"
+    );
+
+  if (!container) return;
+
+  const beforeCutoff =
+    allRaces.filter(
+      isBeforeCutoff
+    );
+
+  const scored =
+    beforeCutoff
+      .map(scoreRace)
+      .filter(Boolean);
+
+  scored.forEach(item => {
+
+    const previous =
+      getPreviousPrediction(item);
+
+    item.changeReason =
+      buildChangeReason(
+        previous,
+        item
+      );
 
   });
 
+  allRaces =
+    allRaces.map(original => {
 
-  show(
-    groups[0].number
-  );
+      const scoredItem =
+        scored.find(
+          x =>
+            predictionId(x) ===
+            predictionId(original)
+        );
 
-}
-
-
-/* =================================
-   買ったボタン
-================================= */
-
-function setupBuyButtons() {
-
-  document
-    .querySelectorAll(
-      ".buy-button"
-    )
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          const k =
-            button.dataset.buyKey;
-
-
-          if (!k) {
-            return;
-          }
-
-
-          /*
-            現在表示中の予想から
-            該当レースを探す
-          */
-
-          const item =
-            window.__scored?.find(
-              x =>
-                predictionKey(x.race) === k
-            );
-
-
-          if (!item) {
-            return;
-          }
-
-
-          purchaseRace(item);
-
-        }
-      );
-
+      return scoredItem || original;
     });
 
-}
-
-
-/* =================================
-   メイン取得
-================================= */
-
-async function fetchData() {
-
-  const controller =
-    new AbortController();
-
-
-  const timer =
-    setTimeout(
-      () =>
-        controller.abort(),
-      20000
-    );
-
-
-  try {
-
-    return await fetch(
-      API,
-      {
-        cache:"no-store",
-        signal:
-          controller.signal
-      }
-    );
-
-  }
-  finally {
-
-    clearTimeout(timer);
-
-  }
-
-}
-
-
-/* =================================
-   メイン
-================================= */
-
-async function load() {
-
-  if (
-    !$("#status") ||
-    !$("#picks")
-  ) {
-
-    return;
-
-  }
-
-
-  $("#status")
-    .textContent =
-      "データ取得中…";
-
-
-  $("#picks")
-    .innerHTML = `
-      <div class="loading">
-        出走表・直前情報を確認しています…
-      </div>
-    `;
-
-
-  try {
-
-    const response =
-      await fetchData();
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        `API ${response.status}`
+  const candidates =
+    scored
+      .filter(
+        x => x.show
+      )
+      .sort(
+        (a, b) =>
+          b.confidence -
+          a.confidence
       );
 
-    }
+  let selected =
+    candidates.slice(0, 24);
 
+  /*
+    固いレースが少ない日でも
+    次回更新で候補が出るよう、
+    締切前レースから最低限の候補を表示。
+  */
 
-    const data =
-      await response.json();
+  if (selected.length < 10) {
 
+    const fallback =
+      scored
+        .filter(
+          x =>
+            isBeforeCutoff(x)
+        )
+        .sort(
+          (a, b) =>
+            b.confidence -
+            a.confidence
+        );
 
-    const allRaces = [];
+    fallback.forEach(x => {
 
+      if (
+        selected.length >= 20
+      ) {
+        return;
+      }
 
-    for (
-      const stadium of
-      Object.values(
-        data.programs?.stadiums || {}
-      )
-    ) {
-
-      for (
-        const r of
-        Object.values(
-          stadium.races || {}
+      if (
+        !selected.some(
+          y =>
+            predictionId(y) ===
+            predictionId(x)
         )
       ) {
-
-        /*
-          結果は締切後でも保存
-        */
-
-        if (r.result) {
-
-          saveResult(r);
-
-        }
-
-
-        if (
-          getRacers(r).length === 6
-        ) {
-
-          allRaces.push(r);
-
-        }
-
+        selected.push(x);
       }
-
-    }
-
-
-    /*
-      156レースを全部分析
-    */
-
-    const analyzed =
-      allRaces
-        .map(scoreRace)
-        .filter(Boolean);
-
-
-    /*
-      現在時刻を過ぎたレースは
-      通常画面には表示しない
-    */
-
-    const upcoming =
-      analyzed.filter(
-        x =>
-          !isPastCutoff(x.race)
-      );
-
-
-    /*
-      自信度順
-    */
-
-    upcoming.sort(
-      (a,b) =>
-        b.confidence -
-        a.confidence
-    );
-
-
-    /*
-      激アツ
-    */
-
-    const hot =
-      upcoming.filter(
-        x =>
-          x.level === "激アツ"
-      );
-
-
-    /*
-      その他
-    */
-
-    const normal =
-      upcoming.filter(
-        x =>
-          x.level !== "激アツ"
-      );
-
-
-    /*
-      開催場ごと
-    */
-
-    const map = {};
-
-
-    normal.forEach(item => {
-
-      const n =
-        num(
-          item.race.stadium_number
-        );
-
-
-      if (!map[n]) {
-
-        map[n] = {
-
-          number:n,
-
-          name:
-            STADIUMS[n] ||
-            `場${n}`,
-
-          races:[]
-
-        };
-
-      }
-
-
-      map[n].races.push(item);
 
     });
+  }
 
+  /*
+    表示する予想を保存。
+    保存前のデータと比較することで
+    次回更新時の変更理由を保持。
+  */
 
-    const groups =
-      Object.values(map)
-        .sort(
-          (a,b) =>
-            a.number -
-            b.number
-        );
+  selected.forEach(item => {
+    savePrediction(item);
+  });
 
+  /*
+    激アツ
+  */
 
-    /*
-      グローバルに保持
-      「買った」ボタンから使用
-    */
+  const hot =
+    selected
+      .filter(
+        x => x.hot
+      )
+      .sort(
+        (a, b) =>
+          b.confidence -
+          a.confidence
+      );
 
-    window.__scored =
-      upcoming;
+  /*
+    通常
+  */
 
+  let normal =
+    selected
+      .filter(
+        x => !x.hot
+      )
+      .sort(
+        (a, b) =>
+          b.confidence -
+          a.confidence
+      );
 
-    /*
-      日付
-    */
+  if (
+    selectedStadium !== "all"
+  ) {
+    normal =
+      normal.filter(
+        x =>
+          String(
+            x.stadium_number
+          ) === selectedStadium
+      );
+  }
 
-    $("#date")
-      .textContent =
-        allRaces[0]?.date ||
-        new Date()
-          .toLocaleDateString(
-            "ja-JP"
-          );
+  const status =
+    document.getElementById(
+      "status"
+    );
 
+  if (status) {
 
-    /*
-      更新時刻
-    */
+    status.textContent =
+      `分析 ${allRaces.length}R / 推奨 ${selected.length}R`;
+  }
 
-    $("#updated")
-      .textContent =
-        `取得時刻 ${
-          new Date()
-            .toLocaleTimeString(
-              "ja-JP",
-              {
-                hour:"2-digit",
-                minute:"2-digit",
-                second:"2-digit"
-              }
-            )
-        }`;
+  const date =
+    document.getElementById(
+      "date"
+    );
 
+  if (date) {
 
-    /*
-      ステータス
-    */
+    date.textContent =
+      `${todayString()} 今日の予想`;
+  }
 
-    $("#status")
-      .textContent =
-        upcoming.length
-          ? `${upcoming.length}レースを推奨`
-          : "本日は推奨なし";
+  const updated =
+    document.getElementById(
+      "updated"
+    );
 
+  if (updated) {
 
-    /*
-      画面
-    */
+    updated.textContent =
+      lastUpdated
+        ? `更新 ${formatDateJP(lastUpdated)}`
+        : "";
+  }
 
-    let html = "";
+  /*
+    HTML
+  */
 
+  let html = "";
 
-    /*
-      激アツ
-    */
+  if (hot.length) {
 
     html += `
-
       <section class="hot-section">
 
         <div class="section-title">
@@ -2305,111 +1694,507 @@ async function load() {
           </span>
 
           <small>
-            ${hot.length}レース
+            特に自信の高いレース
           </small>
 
         </div>
 
-
         ${
-          hot.length
-            ? hot
-                .map(renderRace)
-                .join("")
-            : `
-              <div class="no-hot">
-                現時点で激アツ判定はありません
-              </div>
-            `
+          hot
+            .map(renderRace)
+            .join("")
         }
 
       </section>
-
     `;
 
+  } else {
 
-    /*
-      その他
-    */
+    html += `
+      <section class="hot-section">
 
-    if (groups.length) {
+        <div class="section-title">
 
-      html += `
+          <span>
+            激アツ
+          </span>
+
+          <small>
+            現時点では該当なし
+          </small>
+
+        </div>
+
+        <div class="no-hot">
+          現時点で「激アツ」基準を満たすレースはありません。
+          次回更新で展示・進入情報が変われば再判定します。
+        </div>
+
+      </section>
+    `;
+  }
+
+
+  if (normal.length) {
+
+    html += `
+      <section>
 
         <div class="normal-title">
-          その他の推奨レース
+          その他の有力レース
         </div>
 
-        ${renderTabs(groups)}
+        ${
+          renderStadiumTabs(
+            selected
+          )
+        }
 
-      `;
+        ${
+          normal
+            .map(renderRace)
+            .join("")
+        }
 
-    }
-    else {
+      </section>
+    `;
 
-      html += `
+  } else if (!hot.length) {
 
-        <div class="empty">
+    html += `
+      <div class="empty">
 
-          <div class="empty-title">
-            その他の推奨レースはありません
-          </div>
-
-          <div class="empty-text">
-            締切前のレースだけを表示しています。
-            直前情報の更新によって予想が変わる場合があります。
-          </div>
-
+        <div class="empty-title">
+          現在表示できる推奨レースはありません
         </div>
 
-      `;
+        <div class="empty-text">
+          全レースを分析しています。
+          展示・進入情報の更新後に再度「更新」を押してください。
+        </div>
 
-    }
-
-
-    $("#picks")
-      .innerHTML =
-        html;
-
-
-    /*
-      タブ
-    */
-
-    setupTabs(groups);
-
-
-    /*
-      購入ボタン
-    */
-
-    setupBuyButtons();
-
-
-    /*
-      購入数
-    */
-
-    updatePurchasedCount();
-
+      </div>
+    `;
 
   }
-  catch (error) {
+
+  container.innerHTML = html;
+}
+
+
+/* =========================
+   購入済みページ
+========================= */
+
+async function loadPurchasedPage() {
+
+  const container =
+    document.getElementById(
+      "purchasedList"
+    );
+
+  if (!container) {
+    return false;
+  }
+
+  const purchased =
+    getPurchased();
+
+  const count =
+    document.getElementById(
+      "purchaseCount"
+    );
+
+  if (count) {
+    count.textContent =
+      `${purchased.length}件`;
+  }
+
+  if (!purchased.length) {
+
+    container.innerHTML = `
+      <div class="empty">
+
+        <div class="empty-title">
+          購入済みレースはありません
+        </div>
+
+        <div class="empty-text">
+          予想画面で「買った」を押したレースがここに表示されます。
+        </div>
+
+      </div>
+    `;
+
+    return true;
+  }
+
+  container.innerHTML =
+    purchased
+      .slice()
+      .reverse()
+      .map(p => {
+
+        const hit =
+          p.result?.hit;
+
+        let resultText =
+          "結果確認前";
+
+        if (
+          p.result &&
+          p.result.order
+        ) {
+
+          resultText =
+            hit === true
+              ? "的中"
+              : "不的中";
+        }
+
+        return `
+          <article class="race-card">
+
+            <div class="race-top">
+
+              <div>
+
+                <div class="race-title">
+                  ${
+                    esc(
+                      STADIUMS[
+                        p.stadium_number
+                      ] ||
+                      "不明"
+                    )
+                  }
+                  ${p.race_number}R
+                </div>
+
+                <div class="event-title">
+                  ${esc(p.title)}
+                </div>
+
+                <div class="deadline">
+                  購入：
+                  ${formatDateJP(p.purchasedAt)}
+                </div>
+
+              </div>
+
+              <div class="confidence">
+
+                <strong>
+                  ${p.confidence || "-"}
+                </strong>
+
+                <small>
+                  自信度
+                </small>
+
+              </div>
+
+            </div>
+
+            <div class="main-pick">
+
+              <div class="pick-label">
+                本命
+              </div>
+
+              <div class="pick-name">
+                ${p.bestLane}号艇
+                ${esc(p.bestName)}
+              </div>
+
+            </div>
+
+            <div class="bets">
+
+              <div class="bets-title">
+                購入した買い目
+              </div>
+
+              <div class="bet-list">
+
+                ${
+                  (p.bets || [])
+                    .map(
+                      bet =>
+                        `<div class="bet">
+                          ${esc(
+                            bet
+                              .split("-")
+                              .join(" - ")
+                          )}
+                        </div>`
+                    )
+                    .join("")
+                }
+
+              </div>
+
+            </div>
+
+            <div class="buy-area">
+
+              <div class="buy-note">
+                ${
+                  p.result?.order
+                    ? `結果：${p.result.order.join("-")}`
+                    : "結果確認中"
+                }
+              </div>
+
+              <div
+                style="
+                  font-weight:900;
+                  font-size:12px;
+                  color:${
+                    hit === true
+                      ? "#8fe0a9"
+                      : hit === false
+                        ? "#d88787"
+                        : "#91a4b7"
+                  };
+                "
+              >
+                ${resultText}
+              </div>
+
+            </div>
+
+          </article>
+        `;
+
+      })
+      .join("");
+
+  return true;
+}
+
+
+/* =========================
+   購入済み結果更新
+========================= */
+
+async function updatePurchasedResults() {
+
+  const purchased =
+    getPurchased();
+
+  if (!purchased.length) {
+    return;
+  }
+
+  /*
+    過去日のAPIを取得。
+  */
+
+  const dates =
+    [
+      ...new Set(
+        purchased.map(
+          x => x.date
+        )
+      )
+    ];
+
+  for (const date of dates) {
+
+    try {
+
+      const url =
+        date === todayString()
+          ? API
+          : `https://boatraceopenapi.github.io/api/v1/${date.replaceAll("-", "/")}.json`;
+
+      const response =
+        await fetch(
+          url,
+          {
+            cache: "no-store"
+          }
+        );
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const data =
+        await response.json();
+
+      const races =
+        extractRaces(data);
+
+      purchased.forEach(p => {
+
+        if (
+          p.date !== date ||
+          p.result
+        ) {
+          return;
+        }
+
+        const race =
+          races.find(
+            r =>
+              r.stadium_number ===
+                p.stadium_number &&
+              r.race_number ===
+                p.race_number
+          );
+
+        if (!race) {
+          return;
+        }
+
+        const raw =
+          data?.programs
+            ?.stadiums?.[
+              String(
+                p.stadium_number
+              )
+            ]?.races?.[
+              String(
+                p.race_number
+              )
+            ]?.result;
+
+        if (!raw) {
+          return;
+        }
+
+        const result =
+          normalizeResult(raw);
+
+        if (
+          !result ||
+          result.order.length < 3
+        ) {
+          return;
+        }
+
+        p.result = {
+          order: result.order,
+          hit: isHit(
+            p,
+            result
+          ),
+          checkedAt:
+            new Date().toISOString()
+        };
+
+      });
+
+    } catch (error) {
+
+      console.log(
+        "結果取得エラー",
+        error
+      );
+
+    }
+  }
+
+  savePurchased(purchased);
+}
+
+
+/* =========================
+   データ取得
+========================= */
+
+async function loadData() {
+
+  const status =
+    document.getElementById(
+      "status"
+    );
+
+  const picks =
+    document.getElementById(
+      "picks"
+    );
+
+  if (status) {
+    status.textContent =
+      "データ取得中…";
+  }
+
+  if (picks) {
+    picks.innerHTML = `
+      <div class="loading">
+        出走表・直前情報を取得しています…
+      </div>
+    `;
+  }
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}?t=${Date.now()}`,
+        {
+          cache: "no-store"
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+    }
+
+    const data =
+      await response.json();
+
+    const races =
+      extractRaces(data);
+
+    if (!races.length) {
+      throw new Error(
+        "レースデータがありません"
+      );
+    }
+
+    allRaces = races;
+
+    lastUpdated =
+      new Date();
+
+    renderMain();
+
+    /*
+      購入済み情報も更新
+    */
+
+    await updatePurchasedResults();
+
+    if (
+      document.getElementById(
+        "purchasedList"
+      )
+    ) {
+      await loadPurchasedPage();
+    }
+
+  } catch (error) {
 
     console.error(
-      "予想取得エラー",
+      "API取得エラー:",
       error
     );
 
+    if (status) {
 
-    $("#status")
-      .textContent =
+      status.textContent =
         "データ取得に失敗しました";
+    }
 
+    if (picks) {
 
-    $("#picks")
-      .innerHTML = `
-
+      picks.innerHTML = `
         <div class="empty">
 
           <div class="empty-title">
@@ -2417,42 +2202,213 @@ async function load() {
           </div>
 
           <div class="empty-text">
-            更新ボタンを押して
-            もう一度試してください。
+            「更新」を押して再試行してください。<br>
+            API側の更新タイミングによって一時的に取得できない場合があります。
           </div>
 
         </div>
-
       `;
-
+    }
   }
-
 }
 
 
-/* =================================
+/* =========================
    更新ボタン
-================================= */
+========================= */
 
-$("#refresh")
-  ?.addEventListener(
+function setupRefresh() {
+
+  const button =
+    document.getElementById(
+      "refresh"
+    );
+
+  if (!button) return;
+
+  button.addEventListener(
     "click",
-    load
+    async () => {
+
+      button.disabled = true;
+      button.textContent =
+        "更新中…";
+
+      try {
+        await loadData();
+      } finally {
+
+        button.disabled = false;
+        button.textContent =
+          "更新";
+      }
+
+    }
   );
+}
 
 
-/* =================================
-   初回
-================================= */
+/* =========================
+   自動更新
+========================= */
 
-load();
+function setupAutoUpdate() {
+
+  setInterval(
+    () => {
+
+      loadData();
+
+    },
+    3 * 60 * 1000
+  );
+}
 
 
-/*
-  3分ごとに更新
-*/
+/* =========================
+   購入履歴削除
+========================= */
 
-setInterval(
-  load,
-  180000
+function setupDeletePurchased() {
+
+  const button =
+    document.getElementById(
+      "clearPurchased"
+    );
+
+  if (!button) return;
+
+  button.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !confirm(
+          "購入済み履歴をすべて削除しますか？"
+        )
+      ) {
+        return;
+      }
+
+      localStorage.removeItem(
+        PURCHASE_KEY
+      );
+
+      loadPurchasedPage();
+
+    }
+  );
+}
+
+
+/* =========================
+   購入済みページ集計
+========================= */
+
+function renderPurchaseStats() {
+
+  const purchased =
+    getPurchased();
+
+  const finished =
+    purchased.filter(
+      x =>
+        x.result &&
+        Array.isArray(
+          x.result.order
+        ) &&
+        x.result.order.length >= 3
+    );
+
+  const hits =
+    finished.filter(
+      x =>
+        x.result.hit === true
+    );
+
+  const rate =
+    finished.length
+      ? Math.round(
+          hits.length /
+          finished.length *
+          100
+        )
+      : 0;
+
+  const count =
+    document.getElementById(
+      "purchaseCount"
+    );
+
+  if (count) {
+    count.textContent =
+      `${purchased.length}件`;
+  }
+
+  const resultCount =
+    document.getElementById(
+      "resultCount"
+    );
+
+  if (resultCount) {
+    resultCount.textContent =
+      `${finished.length}件`;
+  }
+
+  const hitRate =
+    document.getElementById(
+      "hitRate"
+    );
+
+  if (hitRate) {
+    hitRate.textContent =
+      finished.length
+        ? `${rate}%`
+        : "-";
+  }
+}
+
+
+/* =========================
+   起動
+========================= */
+
+async function init() {
+
+  setupRefresh();
+
+  setupDeletePurchased();
+
+  setupAutoUpdate();
+
+  /*
+    購入済みページなら
+    そちらを表示。
+  */
+
+  if (
+    document.getElementById(
+      "purchasedList"
+    )
+  ) {
+
+    await updatePurchasedResults();
+
+    await loadPurchasedPage();
+
+    renderPurchaseStats();
+
+    return;
+  }
+
+  /*
+    通常の予想ページ
+  */
+
+  await loadData();
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  init
 );
