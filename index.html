@@ -514,3 +514,144 @@
       flex: 0 0 auto;
       margin-left: auto;
       color: #71869b;
+      font-size: 8px;
+      white-space: nowrap;
+    }
+
+    .empty {
+      padding: 25px 12px;
+      border: 1px solid #1b334d;
+      border-radius: 13px;
+      background: #0c1c2e;
+      color: #71869d;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .rules {
+      margin-top: 28px;
+      padding: 14px;
+      border: 1px solid #172e45;
+      border-radius: 12px;
+      background: #0a1929;
+    }
+
+    .rules-title {
+      margin-bottom: 8px;
+      color: #8095a9;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .rules p {
+      margin: 4px 0;
+      color: #60758a;
+      font-size: 9px;
+    }
+
+    footer {
+      padding-top: 18px;
+      color: #43586c;
+      text-align: center;
+      font-size: 8px;
+    }
+
+    @media (max-width: 430px) {
+      .app {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      .refresh,
+      .purchase-link {
+        padding: 8px 9px;
+        font-size: 10px;
+      }
+
+      .race-card {
+        padding: 13px;
+      }
+
+      .racers {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">BOAT RACE ANALYSIS</div>
+        <h1>予想屋サイバーはっちゃん</h1>
+      </div>
+
+      <div class="header-buttons">
+        <button class="refresh" id="refreshBtn">更新</button>
+        <a class="purchase-link" href="purchased.html">購入済み</a>
+      </div>
+    </header>
+
+    <section class="status-card">
+      <div>
+        <div class="status-title">STATUS</div>
+        <div id="status">データ取得中…</div>
+      </div>
+
+      <div class="muted" id="updatedAt">--:--</div>
+    </section>
+
+    <section class="analysis-info">
+      <div class="info-chip" id="analysisCount">分析対象 0R</div>
+      <div class="info-chip" id="recommendCount">推奨 0R</div>
+      <div class="info-chip" id="hotCount">激アツ 0R</div>
+    </section>
+
+    <section class="hot-section">
+      <div class="section-title">
+        <span>激アツレース</span>
+        <small>自信度トップ</small>
+      </div>
+
+      <div id="hotRaces">
+        <div class="loading">データ取得中…</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="normal-title">その他の推奨レース</div>
+
+      <div class="stadium-tabs" id="stadiumTabs"></div>
+
+      <div id="picks">
+        <div class="loading">データ取得中…</div>
+      </div>
+    </section>
+
+    <section class="rules">
+      <div class="rules-title">このアプリの見方</div>
+      <p>・全開催場・全レースを分析します。</p>
+      <p>・締切時刻を過ぎたレースは通常一覧から除外します。</p>
+      <p>・推奨レースは自信度の高いものを厳選して表示します。</p>
+      <p>・激アツレースは特に自信度が高いレースです。</p>
+      <p>・展示タイム、展示ST、進入、選手成績などを総合評価します。</p>
+      <p>・予想が前回更新から変化した場合は変更理由を表示します。</p>
+      <p>・「買った」を押すと購入済みページに記録されます。</p>
+      <p>・購入済みレースは締切後も履歴として残ります。</p>
+    </section>
+
+    <footer>
+      予想屋サイバーはっちゃん
+    </footer>
+
+  </main>
+
+  <script src="app.js?v=20260902-3"></script>
+</body>
+</html>
