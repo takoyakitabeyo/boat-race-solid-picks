@@ -2,864 +2,975 @@
 <html lang="ja">
 
 <head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
 
-<meta charset="utf-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover"
->
-
-<meta name="theme-color" content="#071426">
-
-<meta
-  name="description"
-  content="予想屋サイバーはっちゃん"
->
-
-<title>予想屋サイバーはっちゃん</title>
-
-<style>
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100%;
-  background: #071426;
-}
-
-body {
-  color: #f5f7fb;
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Helvetica Neue",
-    "Hiragino Kaku Gothic ProN",
-    "Yu Gothic",
-    sans-serif;
-
-  overflow-x: hidden;
-}
-
-button {
-  font: inherit;
-}
-
-.app {
-  width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 22px 16px 45px;
-}
-
-
-/* =====================
-   ヘッダー
-===================== */
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
+  <meta
+    name="theme-color"
+    content="#08111f"
+  >
 
-.eyebrow {
-  color: #42a5ff;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.8px;
-  margin-bottom: 6px;
-}
-
-h1 {
-  margin: 0;
-  font-size: 26px;
-  line-height: 1.25;
-  letter-spacing: -0.8px;
-}
+  <meta
+    name="description"
+    content="予想屋サイバーはっちゃん - 今日の競艇予想"
+  >
 
-#date {
-  margin-top: 6px;
-  font-size: 13px;
-}
+  <title>予想屋サイバーはっちゃん</title>
 
-.muted {
-  color: #8fa2b8;
-}
+  <style>
 
-.refresh {
-  flex-shrink: 0;
+    * {
+      box-sizing: border-box;
+    }
 
-  padding: 11px 16px;
+    html {
+      background: #08111f;
+    }
 
-  border: 1px solid #1768a8;
-  border-radius: 14px;
+    body {
+      margin: 0;
+      background: #08111f;
+      color: #e8eef5;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+      line-height: 1.5;
+    }
 
-  background: #0d2944;
-  color: white;
+    button {
+      font-family: inherit;
+    }
 
-  font-weight: 700;
-}
+    .app {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding:
+        18px
+        16px
+        40px;
+    }
 
 
-/* =====================
-   判定状況
-===================== */
+    /* =========================
+       ヘッダー
+    ========================= */
 
-.status-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
 
-  gap: 12px;
+      gap: 12px;
 
-  padding: 17px 18px;
-  margin-bottom: 16px;
+      margin-bottom: 16px;
+    }
 
-  border: 1px solid #203b59;
-  border-radius: 18px;
+    .eyebrow {
+      margin-bottom: 3px;
 
-  background: #0d2035;
-}
+      color: #66809a;
 
-.status-title {
-  color: #8fa2b8;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
+      font-size: 9px;
+      font-weight: 800;
 
-#status {
-  font-size: 17px;
-  font-weight: 800;
-}
+      letter-spacing: 1.5px;
+    }
 
-#updated {
-  white-space: nowrap;
-  font-size: 10px;
-}
+    h1 {
+      margin: 0;
 
+      color: #ffffff;
 
-/* =====================
-   統計
-===================== */
+      font-size: 24px;
+      font-weight: 900;
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 7px;
-  margin-bottom: 15px;
-}
+      letter-spacing: -0.5px;
+    }
 
-.stats > div {
-  padding: 10px 5px;
+    .muted {
+      color: #71859a;
+      font-size: 10px;
+    }
 
-  border: 1px solid #203b59;
-  border-radius: 13px;
+    .refresh {
+      flex: 0 0 auto;
 
-  background: #0d2035;
+      padding: 9px 15px;
 
-  text-align: center;
-}
+      border: 1px solid #27435f;
+      border-radius: 10px;
 
-.stats span {
-  display: block;
-  color: #8094aa;
-  font-size: 10px;
-  margin-bottom: 3px;
-}
+      background: #10263d;
 
-.stats b {
-  font-size: 18px;
-}
+      color: #dcecff;
 
+      font-size: 12px;
+      font-weight: 800;
 
-/* =====================
-   レースカード
-===================== */
+      cursor: pointer;
+    }
 
-.race-card {
+    .refresh:active {
+      transform: scale(.97);
+    }
 
-  width: 100%;
 
-  margin-bottom: 14px;
-  padding: 17px;
+    /* =========================
+       判定状況
+    ========================= */
 
-  border: 1px solid #203b59;
-  border-radius: 19px;
+    .status-card {
+      display: flex;
 
-  background: #0d2035;
+      justify-content: space-between;
+      align-items: center;
 
-  overflow: hidden;
-}
+      gap: 10px;
 
-.race-card.hot {
-  border: 2px solid #e7b83e;
-}
+      padding: 13px 14px;
 
+      margin-bottom: 15px;
 
-/* レース上部 */
+      border: 1px solid #1b334d;
+      border-radius: 13px;
 
-.race-top {
-  display: flex;
-  justify-content: space-between;
+      background: #0c1c2e;
+    }
 
-  gap: 10px;
+    .status-title {
+      margin-bottom: 2px;
 
-  min-width: 0;
-}
+      color: #71869d;
 
-.race-title {
-  font-size: 20px;
-  font-weight: 900;
+      font-size: 9px;
+      font-weight: 800;
+    }
 
-  overflow-wrap: anywhere;
-}
+    #status {
+      color: #ffffff;
 
-.grade {
-  display: inline-block;
+      font-size: 13px;
+      font-weight: 800;
+    }
 
-  margin-left: 5px;
-  padding: 3px 6px;
 
-  border-radius: 6px;
+    /* =========================
+       ローディング
+    ========================= */
 
-  background: #233b56;
+    .loading {
+      padding: 30px 10px;
 
-  color: #c8d7e7;
+      color: #71869d;
 
-  font-size: 9px;
-  vertical-align: middle;
-}
+      text-align: center;
 
-.event-title {
-  margin-top: 5px;
+      font-size: 12px;
+    }
 
-  color: #d0dcea;
 
-  font-size: 12px;
-  line-height: 1.45;
+    /* =========================
+       激アツ
+    ========================= */
 
-  overflow-wrap: anywhere;
-}
+    .hot-section {
+      margin-bottom: 24px;
+    }
 
-.subtitle {
-  margin-top: 2px;
+    .section-title {
+      display: flex;
 
-  color: #7f93aa;
+      justify-content: space-between;
+      align-items: center;
 
-  font-size: 10px;
+      padding: 0 3px;
 
-  overflow-wrap: anywhere;
-}
+      margin-bottom: 9px;
+    }
 
-.deadline {
-  margin-top: 5px;
+    .section-title span {
+      color: #ffd75a;
 
-  color: #8296ac;
+      font-size: 18px;
+      font-weight: 900;
+    }
 
-  font-size: 11px;
-}
+    .section-title small {
+      color: #71869d;
 
+      font-size: 10px;
+      font-weight: 700;
+    }
 
-/* =====================
-   自信度
-===================== */
+    .no-hot {
+      padding: 17px;
 
-.confidence {
-  flex-shrink: 0;
+      border: 1px solid #1b334d;
+      border-radius: 13px;
 
-  width: 67px;
+      background: #0c1c2e;
 
-  text-align: center;
-}
+      color: #71869d;
 
-.level {
-  margin-bottom: 4px;
-  padding: 4px 3px;
+      text-align: center;
 
-  border-radius: 7px;
+      font-size: 11px;
+    }
 
-  background: #183a5c;
-  color: #69b8ff;
 
-  font-size: 10px;
-  font-weight: 800;
-}
+    /* =========================
+       その他
+    ========================= */
 
-.hot-level {
-  background: #604812;
-  color: #ffd66b;
-}
+    .normal-title {
+      padding: 0 3px;
 
-.confidence strong {
-  display: block;
+      margin:
+        0
+        0
+        9px;
 
-  font-size: 27px;
-  line-height: 1;
-}
+      color: #8ea1b5;
 
-.confidence small {
-  color: #7e92a8;
-  font-size: 9px;
-}
+      font-size: 12px;
+      font-weight: 900;
+    }
 
 
-/* =====================
-   本命
-===================== */
+    /* =========================
+       開催場タブ
+    ========================= */
 
-.main-pick {
+    .stadium-tabs {
+      display: flex;
 
-  margin-top: 13px;
-  padding: 14px;
+      gap: 7px;
 
-  border-radius: 14px;
+      overflow-x: auto;
 
-  background: #08192b;
-}
+      padding:
+        2px
+        2px
+        10px;
 
-.pick-label {
-  color: #6f9bc1;
+      margin-bottom: 9px;
 
-  font-size: 10px;
-  font-weight: 700;
-}
+      scrollbar-width: none;
 
-.pick-name {
+      -webkit-overflow-scrolling: touch;
+    }
 
-  margin-top: 3px;
+    .stadium-tabs::-webkit-scrollbar {
+      display: none;
+    }
 
-  font-size: 21px;
-  font-weight: 900;
+    .stadium-tab {
+      flex: 0 0 auto;
 
-  overflow-wrap: anywhere;
-}
+      min-width: 76px;
 
-.pick-reason {
+      padding: 8px 10px;
 
-  margin-top: 6px;
+      border: 1px solid #1e3953;
+      border-radius: 11px;
 
-  color: #91a6bc;
+      background: #0c1d30;
 
-  font-size: 10px;
-  line-height: 1.55;
+      color: #8da1b5;
 
-  overflow-wrap: anywhere;
-}
+      text-align: center;
 
+      cursor: pointer;
+    }
 
-/* =====================
-   着順候補
-===================== */
+    .stadium-tab span {
+      display: block;
 
-.place {
+      font-size: 12px;
+      font-weight: 900;
+    }
 
-  display: grid;
+    .stadium-tab small {
+      display: block;
 
-  grid-template-columns: 1fr 1fr;
+      margin-top: 1px;
 
-  gap: 7px;
+      color: #60758b;
 
-  margin-top: 10px;
-}
+      font-size: 9px;
+      font-weight: 700;
+    }
 
-.place > div {
+    .stadium-tab.active {
+      border-color: #2b83bf;
 
-  padding: 9px;
+      background: #123a5a;
 
-  border-radius: 10px;
+      color: #ffffff;
+    }
 
-  background: #102a43;
+    .stadium-tab.active small {
+      color: #91d2fa;
+    }
 
-  color: #d1dce8;
 
-  font-size: 12px;
+    /* =========================
+       レースカード
+    ========================= */
 
-  overflow-wrap: anywhere;
-}
+    .race-card {
+      padding: 15px;
 
-.place b {
+      margin-bottom: 12px;
 
-  display: block;
+      border: 1px solid #1b334d;
+      border-radius: 15px;
 
-  margin-bottom: 2px;
+      background: #0c1c2e;
 
-  color: #7594b3;
+      overflow: hidden;
+    }
 
-  font-size: 9px;
-}
+    .race-card.hot {
+      border-color: #705d22;
 
+      background:
+        linear-gradient(
+          145deg,
+          #151c25,
+          #0c1c2e
+        );
+    }
 
-/* =====================
-   買い目
-===================== */
+    .race-top {
+      display: flex;
 
-.bets {
+      justify-content: space-between;
+      align-items: flex-start;
 
-  margin-top: 13px;
-}
+      gap: 12px;
 
-.bets-title {
+      padding-bottom: 12px;
 
-  margin-bottom: 7px;
+      border-bottom: 1px solid #172d43;
+    }
 
-  color: #8ba0b7;
+    .race-title {
+      color: #ffffff;
 
-  font-size: 10px;
-  font-weight: 700;
-}
+      font-size: 18px;
+      font-weight: 900;
+    }
 
-.bet-list {
+    .grade {
+      display: inline-block;
 
-  display: flex;
+      padding: 2px 6px;
 
-  flex-wrap: wrap;
+      margin-left: 4px;
 
-  gap: 6px;
-}
+      border-radius: 5px;
 
-.bet {
+      background: #18344c;
 
-  display: flex;
+      color: #9ec7e7;
 
-  align-items: center;
+      font-size: 9px;
+      font-weight: 900;
 
-  padding: 8px 11px;
+      vertical-align: middle;
+    }
 
-  border-radius: 9px;
+    .event-title {
+      max-width: 500px;
 
-  background: #173d60;
+      margin-top: 2px;
 
-  color: white;
+      color: #b2c1cf;
 
-  font-size: 15px;
+      font-size: 11px;
+      font-weight: 700;
 
-  font-weight: 900;
+      overflow-wrap: anywhere;
+    }
 
-  letter-spacing: 1px;
+    .subtitle {
+      color: #71869b;
 
-  white-space: nowrap;
-}
+      font-size: 9px;
 
+      overflow-wrap: anywhere;
+    }
 
-/* =====================
-   予想変更
-===================== */
+    .deadline {
+      margin-top: 5px;
 
-.change {
+      color: #61778d;
 
-  margin-top: 10px;
+      font-size: 9px;
+    }
 
-  padding: 9px 10px;
 
-  border-left: 3px solid #42a5ff;
+    /* =========================
+       信頼度
+    ========================= */
 
-  border-radius: 5px;
+    .confidence {
+      flex: 0 0 auto;
 
-  background: #102a43;
+      min-width: 56px;
 
-  font-size: 10px;
+      text-align: right;
+    }
 
-  line-height: 1.5;
+    .confidence strong {
+      display: block;
 
-  overflow-wrap: anywhere;
-}
+      color: #ffffff;
 
-.change b {
-  display: block;
+      font-size: 22px;
+      line-height: 1;
+    }
 
-  color: #55b0ff;
+    .confidence small {
+      color: #667d94;
 
-  margin-bottom: 2px;
-}
+      font-size: 8px;
+    }
 
-.change span {
-  color: #afc0d1;
-}
+    .level {
+      display: inline-block;
 
+      margin-bottom: 4px;
 
-/* =====================
-   出走選手
-===================== */
+      color: #8bb7d6;
 
-.racers {
+      font-size: 9px;
+      font-weight: 900;
+    }
 
-  display: grid;
+    .hot-level {
+      color: #ffd75a;
+    }
 
-  grid-template-columns: repeat(6,1fr);
 
-  gap: 4px;
+    /* =========================
+       本命
+    ========================= */
 
-  margin-top: 12px;
-}
+    .main-pick {
+      padding: 13px 0 11px;
+    }
 
-.racer {
+    .pick-label {
+      margin-bottom: 2px;
 
-  min-width: 0;
+      color: #6d8297;
 
-  padding: 7px 3px;
+      font-size: 9px;
+      font-weight: 800;
+    }
 
-  border-radius: 8px;
+    .pick-name {
+      color: #ffffff;
 
-  background: #10263d;
+      font-size: 19px;
+      font-weight: 900;
+    }
 
-  text-align: center;
-}
+    .pick-reason {
+      margin-top: 5px;
 
-.racer-no {
+      color: #8ca0b3;
 
-  color: #7895b1;
+      font-size: 10px;
 
-  font-size: 9px;
-}
+      overflow-wrap: anywhere;
+    }
 
-.racer-info b {
 
-  display: block;
+    /* =========================
+       2着3着
+    ========================= */
 
-  margin-top: 2px;
+    .place {
+      display: grid;
 
-  font-size: 10px;
+      grid-template-columns: 1fr 1fr;
 
-  line-height: 1.25;
+      gap: 8px;
 
-  overflow-wrap: anywhere;
-}
+      margin-bottom: 11px;
+    }
 
-.racer-info span {
+    .place > div {
+      min-width: 0;
 
-  display: block;
+      padding: 9px;
 
-  margin-top: 2px;
+      border-radius: 9px;
 
-  color: #8195aa;
+      background: #091725;
 
-  font-size: 8px;
-}
+      color: #b8c7d5;
 
-.racer-time {
+      font-size: 10px;
 
-  margin-top: 2px;
+      overflow-wrap: anywhere;
+    }
 
-  color: #9eb2c7;
+    .place b {
+      display: block;
 
-  font-size: 9px;
-}
+      margin-bottom: 2px;
 
+      color: #647b91;
 
-/* =====================
-   推奨なし
-===================== */
+      font-size: 8px;
+    }
 
-.empty,
-.loading {
 
-  padding: 42px 20px;
+    /* =========================
+       買い目
+    ========================= */
 
-  border: 1px solid #203b59;
-  border-radius: 19px;
+    .bets {
+      padding-top: 10px;
 
-  background: #0d2035;
+      border-top: 1px solid #172d43;
+    }
 
-  text-align: center;
-}
+    .bets-title {
+      margin-bottom: 7px;
 
-.empty-title {
+      color: #71869b;
 
-  font-size: 20px;
-  font-weight: 900;
+      font-size: 9px;
+      font-weight: 800;
+    }
 
-  line-height: 1.5;
-}
+    .bet-list {
+      display: flex;
 
-.empty-text {
+      flex-wrap: wrap;
 
-  margin-top: 12px;
+      gap: 7px;
+    }
 
-  color: #9bacc0;
+    .bet {
+      display: flex;
 
-  font-size: 12px;
+      align-items: center;
+      justify-content: center;
 
-  line-height: 1.8;
-}
+      min-width: 82px;
 
-.empty-refresh {
+      padding: 8px 10px;
 
-  margin-top: 16px;
+      border: 1px solid #244c6e;
+      border-radius: 9px;
 
-  padding: 10px 17px;
+      background: #123552;
 
-  border: 1px solid #1768a8;
-  border-radius: 10px;
+      color: #ffffff;
 
-  background: #123452;
+      font-size: 15px;
+      font-weight: 900;
 
-  color: white;
+      letter-spacing: 1px;
+    }
 
-  font-weight: 700;
-}
+    .bet i {
+      margin: 0 5px;
 
+      color: #65b8ef;
 
-/* =====================
-   基準
-===================== */
+      font-style: normal;
 
-.rules {
+      font-size: 10px;
+    }
 
-  margin-top: 18px;
-  padding: 18px;
 
-  border: 1px solid #203b59;
-  border-radius: 17px;
+    /* =========================
+       予想変更
+    ========================= */
 
-  background: #0b1b2e;
-}
+    .change {
+      display: flex;
 
-.rules h2 {
+      gap: 7px;
 
-  margin: 0 0 10px;
+      padding: 8px 9px;
 
-  font-size: 16px;
-}
+      margin-top: 9px;
 
-.rules ul {
+      border-radius: 8px;
 
-  margin: 0;
+      background: #17283a;
 
-  padding-left: 18px;
-}
+      color: #9eb0c1;
 
-.rules li {
+      font-size: 9px;
+    }
 
-  margin: 6px 0;
+    .change b {
+      flex: 0 0 auto;
 
-  color: #8fa1b5;
+      color: #e0b84f;
+    }
 
-  font-size: 11px;
 
-  line-height: 1.55;
-}
+    /* =========================
+       選手一覧
+    ========================= */
 
+    .racers {
+      display: grid;
 
-/* =====================
-   フッター
-===================== */
+      grid-template-columns:
+        repeat(2, 1fr);
 
-footer {
+      gap: 5px;
 
-  display: flex;
-  justify-content: space-between;
+      margin-top: 12px;
+    }
 
-  gap: 10px;
+    .racer {
+      display: flex;
 
-  margin-top: 18px;
+      align-items: center;
 
-  color: #60748a;
+      min-width: 0;
 
-  font-size: 9px;
-}
+      gap: 7px;
 
+      padding: 7px;
 
-/* =====================
-   スマホ
-===================== */
+      border-radius: 8px;
 
-@media (max-width:600px) {
+      background: #091725;
+    }
 
-  .app {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
+    .racer-no {
+      flex: 0 0 22px;
 
-  .topbar {
-    align-items: flex-start;
-  }
+      width: 22px;
+      height: 22px;
 
-  h1 {
-    font-size: 25px;
-  }
+      border-radius: 6px;
 
-  .status-card {
-    padding: 15px;
-  }
+      background: #1b334a;
 
-  .race-card {
-    padding: 14px;
-  }
+      color: #dbe8f3;
 
-  .race-title {
-    font-size: 18px;
-  }
+      text-align: center;
 
-  .pick-name {
-    font-size: 19px;
-  }
+      line-height: 22px;
 
-  .racers {
-    gap: 3px;
-  }
+      font-size: 10px;
+      font-weight: 900;
+    }
 
-  .racer {
-    padding-left: 2px;
-    padding-right: 2px;
-  }
+    .racer-info {
+      min-width: 0;
 
-  .racer-info b {
-    font-size: 9px;
-  }
+      overflow: hidden;
+    }
 
-}
+    .racer-info b {
+      display: block;
 
+      overflow: hidden;
 
-/* かなり小さい画面 */
+      color: #b9c8d6;
 
-@media (max-width:380px) {
+      font-size: 9px;
 
-  h1 {
-    font-size: 22px;
-  }
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
 
-  .refresh {
-    padding: 9px 12px;
-  }
+    .racer-info span {
+      color: #62788e;
 
-  .racers {
-    grid-template-columns: repeat(3,1fr);
-  }
+      font-size: 8px;
+    }
 
-}
+    .racer-time {
+      flex: 0 0 auto;
 
-</style>
+      margin-left: auto;
 
+      color: #71869b;
+
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+
+    /* =========================
+       空表示
+    ========================= */
+
+    .empty {
+      padding: 25px 15px;
+
+      border: 1px solid #1b334d;
+      border-radius: 14px;
+
+      background: #0c1c2e;
+
+      text-align: center;
+    }
+
+    .empty-title {
+      color: #d8e2eb;
+
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .empty-text {
+      margin-top: 5px;
+
+      color: #71869d;
+
+      font-size: 10px;
+    }
+
+
+    /* =========================
+       フッター
+    ========================= */
+
+    footer {
+      display: flex;
+
+      justify-content: space-between;
+
+      gap: 10px;
+
+      padding-top: 20px;
+
+      color: #4f6479;
+
+      font-size: 8px;
+    }
+
+
+    /* =========================
+       スマホ
+    ========================= */
+
+    @media (max-width: 600px) {
+
+      .app {
+        padding:
+          15px
+          13px
+          35px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      .status-card {
+        padding: 12px;
+      }
+
+      .race-card {
+        padding: 13px;
+      }
+
+      .race-title {
+        font-size: 17px;
+      }
+
+      .pick-name {
+        font-size: 18px;
+      }
+
+      .bet {
+        min-width: 80px;
+
+        padding: 8px 9px;
+
+        font-size: 14px;
+      }
+
+      .racers {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+      footer {
+        flex-direction: column;
+
+        gap: 3px;
+      }
+
+    }
+
+  </style>
 </head>
 
 
 <body>
 
-<main class="app">
+  <main class="app">
+
+    <!-- =====================
+         ヘッダー
+    ====================== -->
+
+    <header class="topbar">
+
+      <div>
+
+        <div class="eyebrow">
+          BOAT RACE / CYBER HATCHAN
+        </div>
+
+        <h1>
+          予想屋サイバーはっちゃん
+        </h1>
+
+        <div
+          id="date"
+          class="muted"
+        >
+        </div>
+
+      </div>
 
 
-<header class="topbar">
+      <button
+        id="refresh"
+        class="refresh"
+        type="button"
+      >
+        更新
+      </button>
 
-  <div>
-
-    <div class="eyebrow">
-      BOAT RACE / PERSONAL
-    </div>
-
-    <h1>
-      予想屋サイバーはっちゃん
-    </h1>
-
-    <div
-      id="date"
-      class="muted">
-      読み込み中…
-    </div>
-
-  </div>
+    </header>
 
 
-  <button
-    id="refresh"
-    class="refresh">
-    更新
-  </button>
+    <!-- =====================
+         判定状況
+    ====================== -->
 
-</header>
+    <section class="status-card">
 
+      <div>
 
-<section class="status-card">
+        <div class="status-title">
+          判定状況
+        </div>
 
-  <div>
+        <div id="status">
+          データ取得中…
+        </div>
 
-    <div class="status-title">
-      判定状況
-    </div>
-
-    <div id="status">
-      データ取得中…
-    </div>
-
-  </div>
+      </div>
 
 
-  <div
-    id="updated"
-    class="muted">
-  </div>
+      <div
+        id="updated"
+        class="muted"
+      >
+      </div>
 
-</section>
-
-
-<section id="notice"></section>
+    </section>
 
 
-<section id="picks"></section>
+    <!-- =====================
+         予想表示
+    ====================== -->
+
+    <section id="picks">
+
+      <div class="loading">
+        出走表・直前情報を確認しています…
+      </div>
+
+    </section>
 
 
-<section class="rules">
+    <!-- =====================
+         基準
+    ====================== -->
 
-  <h2>
-    このアプリの基準
-  </h2>
+    <section class="rules">
 
-  <ul>
+      <h2>
+        このアプリの基準
+      </h2>
 
-    <li>
-      実際のBOAT RACEデータだけを使用します。
-    </li>
+      <ul>
 
-    <li>
-      自信度の高い順に最大5レースを表示します。
-    </li>
+        <li>
+          全レースを分析し、基準を満たしたレースだけを表示します。
+        </li>
 
-    <li>
-      「激アツ」「本命」「有力」の3段階で評価します。
-    </li>
+        <li>
+          自信度の高いレースを優先して表示します。
+        </li>
 
-    <li>
-      1着・2着・3着候補を総合的に評価します。
-    </li>
+        <li>
+          特に自信の高いレースは「激アツ」として上部に表示します。
+        </li>
 
-    <li>
-      展示タイム・進入・展示STなどの直前情報を反映します。
-    </li>
+        <li>
+          2着・3着候補を評価して買い目を絞ります。
+        </li>
 
-    <li>
-      予想が変更された場合は変更理由を表示します。
-    </li>
+        <li>
+          展示タイム・進入・展示STなどの直前情報を考慮します。
+        </li>
 
-  </ul>
+        <li>
+          更新によって予想が変わった場合は変更理由を表示します。
+        </li>
 
-</section>
+      </ul>
 
-
-<footer>
-
-  <span>
-    データ：Boatrace Open API
-  </span>
-
-  <span>
-    このアプリは投票を行いません
-  </span>
-
-</footer>
+    </section>
 
 
-</main>
+    <!-- =====================
+         フッター
+    ====================== -->
+
+    <footer>
+
+      <span>
+        データ：Boatrace Open API
+      </span>
+
+      <span>
+        このアプリは投票を行いません
+      </span>
+
+    </footer>
+
+  </main>
 
 
-<script src="app.js?v=20260902"></script>
+  <!-- =====================
+       JavaScript
+  ====================== -->
+
+  <script src="app.js?v=20260902"></script>
 
 </body>
 
