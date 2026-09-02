@@ -1,2627 +1,516 @@
-const API =
-  "https://boatraceopenapi.github.io/api/v1/today.json";
-
-const STADIUMS = {
-  1: "桐生",
-  2: "戸田",
-  3: "江戸川",
-  4: "平和島",
-  5: "多摩川",
-  6: "浜名湖",
-  7: "蒲郡",
-  8: "常滑",
-  9: "津",
-  10: "三国",
-  11: "びわこ",
-  12: "住之江",
-  13: "尼崎",
-  14: "鳴門",
-  15: "丸亀",
-  16: "児島",
-  17: "宮島",
-  18: "徳山",
-  19: "下関",
-  20: "若松",
-  21: "芦屋",
-  22: "福岡",
-  23: "唐津",
-  24: "大村"
-};
-
-
-/* =========================================================
-   基本関数
-========================================================= */
-
-const $ = (id) => document.getElementById(id);
-
-function num(v, fallback = 0) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
-}
-
-function esc(v) {
-  return String(v ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function rankName(rank) {
-  return rank || "";
-}
-
-function fmtTime(v) {
-  if (!v) return "--:--";
-
-  const s = String(v);
-
-  if (s.includes(":")) {
-    return s.slice(0, 5);
-  }
-
-  if (/^\d{4}$/.test(s)) {
-    return `${s.slice(0, 2)}:${s.slice(2)}`;
-  }
-
-  return s;
-}
-
-function gradeName(v) {
-  const n = num(v);
-
-  if (n === 1) return "SG";
-  if (n === 2) return "GⅠ";
-  if (n === 3) return "GⅡ";
-  if (n === 4) return "GⅢ";
-
-  return "一般";
-}
-
-function todayString() {
-  const d = new Date();
-
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-
-  return `${y}${m}${day}`;
-}
-
-function nowJST() {
-  return new Date(
-    new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Tokyo"
-    })
-  );
-}
-
-
-/* =========================================================
-   データ取得
-========================================================= */
-
-function getRacers(race) {
-  const racers = race?.racers;
-
-  if (!racers) return [];
-
-  if (Array.isArray(racers)) {
-    return racers;
-  }
-
-  return Object.keys(racers)
-    .sort((a, b) => Number(a) - Number(b))
-    .map((k) => racers[k]);
-}
-
-function getPreview(race) {
-  const p = race?.preview;
-
-  if (!p) return [];
-
-  if (Array.isArray(p.racers)) {
-    return p.racers;
-  }
-
-  if (p.racers && typeof p.racers === "object") {
-    return Object.keys(p.racers)
-      .sort((a, b) => Number(a) - Number(b))
-      .map((k) => p.racers[k]);
-  }
-
-  return [];
-}
-
-function racerNumber(racer, index) {
-  return num(
-    racer?.boat_number ??
-    racer?.number ??
-    racer?.frame ??
-    racer?.枠番,
-    index + 1
-  );
-}
-
-function racerName(racer) {
-  return (
-    racer?.name ??
-    racer?.racer_name ??
-    racer?.選手名 ??
-    "選手情報なし"
-  );
-}
-
-function racerRank(racer) {
-  return (
-    racer?.class ??
-    racer?.rank ??
-    racer?.grade ??
-    racer?.級別 ??
-    ""
-  );
-}
-
-function nationalWin(racer) {
-  return num(
-    racer?.national_win_rate ??
-    racer?.national_win ??
-    racer?.win_rate ??
-    racer?.全国勝率
-  );
-}
-
-function national3(racer) {
-  return num(
-    racer?.national_3_rate ??
-    racer?.national_triple_rate ??
-    racer?.national_3ren_rate ??
-    racer?.全国3連対率
-  );
-}
-
-function localWin(racer) {
-  return num(
-    racer?.local_win_rate ??
-    racer?.local_win ??
-    racer?.当地勝率
-  );
-}
-
-function motor3(racer) {
-  return num(
-    racer?.motor_3_rate ??
-    racer?.motor_triple_rate ??
-    racer?.motor_3ren_rate ??
-    racer?.モーター3連対率
-  );
-}
-
-function avgST(racer) {
-  return num(
-    racer?.average_start_timing ??
-    racer?.avg_start_timing ??
-    racer?.average_st ??
-    racer?.平均ST
-  );
-}
-
-function previewForBoat(preview, boat) {
-  return preview.find(
-    (p, i) =>
-      num(
-        p?.boat_number ??
-        p?.number ??
-        p?.frame ??
-        p?.枠番,
-        i + 1
-      ) === boat
-  ) || {};
-}
-
-function exhibitionTime(p) {
-  return num(
-    p?.exhibition_time ??
-    p?.exhibition ??
-    p?.展示タイム
-  );
-}
-
-function exhibitionST(p) {
-  return num(
-    p?.start_timing ??
-    p?.exhibition_start_timing ??
-    p?.展示ST
-  );
-}
-
-function courseOf(p, boat) {
-  return num(
-    p?.course ??
-    p?.entry_course ??
-    p?.進入コース,
-    boat
-  );
-}
-
-
-/* =========================================================
-   締切判定
-========================================================= */
-
-function getCutoff(race) {
-  return (
-    race?.closed_at ??
-    race?.close_at ??
-    race?.deadline ??
-    race?.closedAt ??
-    ""
-  );
-}
-
-function isPastCutoff(race) {
-  const raw = getCutoff(race);
-
-  if (!raw) return false;
-
-  const d = new Date(raw);
-
-  if (!Number.isNaN(d.getTime())) {
-    return d.getTime() <= Date.now();
-  }
-
-  const m = String(raw).match(/(\d{1,2}):(\d{2})/);
-
-  if (!m) return false;
-
-  const now = nowJST();
-
-  const cutoff = new Date(now);
-
-  cutoff.setHours(
-    Number(m[1]),
-    Number(m[2]),
-    0,
-    0
-  );
-
-  return cutoff.getTime() <= now.getTime();
-}
-
-
-/* =========================================================
-   選手評価
-========================================================= */
-
-function rankScore(rank) {
-  const r = String(rank || "").toUpperCase();
-
-  if (r.includes("A1")) return 16;
-  if (r.includes("A2")) return 11;
-  if (r.includes("B1")) return 6;
-  if (r.includes("B2")) return 2;
-
-  return 4;
-}
-
-function playerScore(racer) {
-
-  const rank = rankScore(racerRank(racer));
-
-  const nw = nationalWin(racer);
-  const nt = national3(racer);
-  const lw = localWin(racer);
-  const mt = motor3(racer);
-  const st = avgST(racer);
-
-  let score = 0;
-
-  score += rank;
-
-  score += clamp(
-    (nw - 5) * 5,
-    -5,
-    12
-  );
-
-  score += clamp(
-    (nt - 45) * 0.20,
-    -4,
-    7
-  );
-
-  score += clamp(
-    (lw - 5) * 2,
-    -3,
-    5
-  );
-
-  score += clamp(
-    (mt - 30) * 0.10,
-    -3,
-    5
-  );
-
-  if (st > 0) {
-    if (st <= 0.13) score += 5;
-    else if (st <= 0.15) score += 3;
-    else if (st <= 0.17) score += 1;
-    else if (st >= 0.20) score -= 2;
-  }
-
-  return score;
-}
-
-
-/* =========================================================
-   展示評価
-========================================================= */
-
-function previewScore(p) {
-
-  let score = 0;
-
-  const st = exhibitionST(p);
-  const et = exhibitionTime(p);
-
-  if (st > 0) {
-
-    if (st <= 0.10) score += 5;
-    else if (st <= 0.12) score += 4;
-    else if (st <= 0.14) score += 3;
-    else if (st <= 0.16) score += 1;
-    else if (st >= 0.19) score -= 2;
-
-  }
-
-  if (et > 0) {
-
-    if (et <= 6.70) score += 5;
-    else if (et <= 6.75) score += 4;
-    else if (et <= 6.80) score += 2;
-    else if (et >= 6.90) score -= 2;
-
-  }
-
-  return score;
-}
-
-
-/* =========================================================
-   レース採点
-========================================================= */
-
-function scoreRace(race, stadiumNumber) {
-
-  const racers = getRacers(race);
-
-  if (racers.length < 6) {
-    return null;
-  }
-
-  const preview = getPreview(race);
-
-  const boats = racers.map((racer, index) => {
-
-    const boat = racerNumber(racer, index);
-    const p = previewForBoat(preview, boat);
-
-    const base = playerScore(racer);
-    const pre = previewScore(p);
-
-    let total = base + pre;
-
-    const course = courseOf(p, boat);
-
-    /*
-      1号艇のイン戦を評価
-    */
-    if (boat === 1 && course === 1) {
-      total += 13;
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08111f">
+  <meta name="description" content="予想屋サイバーはっちゃん - 今日の競艇予想">
+
+  <title>予想屋サイバーはっちゃん</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
     }
 
-    /*
-      進入が深くなっている場合は少し減点
-    */
-    if (boat === 1 && course > 1) {
-      total -= 7;
+    html {
+      background: #08111f;
     }
 
-    return {
-      racer,
-      boat,
-      name: racerName(racer),
-      rank: racerRank(racer),
-      nationalWin: nationalWin(racer),
-      national3: national3(racer),
-      localWin: localWin(racer),
-      motor3: motor3(racer),
-      avgST: avgST(racer),
-      course,
-      exhibitionTime: exhibitionTime(p),
-      exhibitionST: exhibitionST(p),
-      total
-    };
-
-  });
-
-  boats.sort((a, b) => b.total - a.total);
-
-  const first = boats[0];
-
-  const boat1 = boats.find(
-    (b) => b.boat === 1
-  );
-
-  if (!first || !boat1) {
-    return null;
-  }
-
-  const secondBest = boats[1];
-
-  const margin =
-    first.total -
-    secondBest.total;
-
-  /*
-    1号艇が本命ランキング上位か
-  */
-  const rank1 =
-    boats.findIndex(
-      (b) => b.boat === 1
-    ) + 1;
-
-  /*
-    イン有利度
-  */
-  let insideScore = 0;
-
-  if (boat1.course === 1) {
-    insideScore = 12;
-  } else if (boat1.course === 2) {
-    insideScore = 4;
-  } else {
-    insideScore = -5;
-  }
-
-  /*
-    全国成績
-  */
-  const performanceScore =
-    clamp(
-      (boat1.nationalWin - 5.0) * 5,
-      -3,
-      12
-    ) +
-    clamp(
-      (boat1.national3 - 45) * 0.12,
-      -3,
-      7
-    );
-
-  /*
-    展示
-  */
-  let exhibitionBonus = 0;
-
-  if (boat1.exhibitionST > 0) {
-    if (boat1.exhibitionST <= 0.10) {
-      exhibitionBonus += 7;
-    } else if (boat1.exhibitionST <= 0.12) {
-      exhibitionBonus += 5;
-    } else if (boat1.exhibitionST <= 0.14) {
-      exhibitionBonus += 3;
-    } else if (boat1.exhibitionST >= 0.19) {
-      exhibitionBonus -= 3;
-    }
-  }
-
-  if (boat1.exhibitionTime > 0) {
-    if (boat1.exhibitionTime <= 6.70) {
-      exhibitionBonus += 5;
-    } else if (boat1.exhibitionTime <= 6.75) {
-      exhibitionBonus += 3;
-    } else if (boat1.exhibitionTime >= 6.90) {
-      exhibitionBonus -= 3;
-    }
-  }
-
-  /*
-    相手との差
-  */
-  const marginScore =
-    clamp(
-      margin * 1.15,
-      0,
-      18
-    );
-
-  /*
-    最終信頼度
-    99に張り付かないように上限96
-  */
-  let confidence =
-    52 +
-    insideScore +
-    performanceScore +
-    exhibitionBonus +
-    marginScore;
-
-  /*
-    1号艇がランキング上位なら加点
-  */
-  if (rank1 === 1) {
-    confidence += 7;
-  } else if (rank1 === 2) {
-    confidence += 3;
-  }
-
-  /*
-    A1のインなら追加評価
-  */
-  if (
-    boat1.course === 1 &&
-    String(boat1.rank).includes("A1")
-  ) {
-    confidence += 4;
-  }
-
-  confidence = Math.round(
-    clamp(confidence, 45, 96)
-  );
-
-
-  /* =======================================================
-     表示レベル
-  ======================================================= */
-
-  let level = "候補";
-
-  if (
-    confidence >= 87 &&
-    first.boat === 1 &&
-    boat1.course === 1 &&
-    margin >= 10
-  ) {
-    level = "激アツ";
-  } else if (
-    confidence >= 75 &&
-    first.boat === 1
-  ) {
-    level = "本命";
-  } else if (
-    confidence >= 64
-  ) {
-    level = "有力";
-  }
-
-
-  /* =======================================================
-     買い目
-  ======================================================= */
-
-  const secondCandidates = boats
-    .filter((b) => b.boat !== first.boat)
-    .slice(0, 3);
-
-  const thirdCandidates = boats
-    .filter((b) =>
-      b.boat !== first.boat &&
-      b.boat !== secondCandidates[0]?.boat
-    )
-    .slice(0, 3);
-
-  const second =
-    secondCandidates[0] ||
-    boats[1];
-
-  const third =
-    thirdCandidates[0] ||
-    boats[2];
-
-  const second2 =
-    secondCandidates[1] ||
-    boats[2];
-
-  const third2 =
-    thirdCandidates[1] ||
-    boats[3];
-
-
-  const bets = [
-    `${first.boat}-${second.boat}-${third.boat}`,
-    `${first.boat}-${second.boat}-${third2.boat}`,
-    `${first.boat}-${second2.boat}-${third.boat}`,
-    `${first.boat}-${second2.boat}-${third2.boat}`
-  ];
-
-
-  /* =======================================================
-     推奨判定
-     
-     厳しすぎないようにする。
-     上位を必ず候補にできる設計。
-  ======================================================= */
-
-  let show = false;
-
-  if (confidence >= 60) {
-    show = true;
-  }
-
-  /*
-    1号艇が1位でなくても、
-    高得点なら候補として表示。
-  */
-  if (
-    confidence >= 58 &&
-    first.total >= 25
-  ) {
-    show = true;
-  }
-
-  /*
-    明らかに評価が低いレースだけ除外。
-  */
-  if (
-    confidence < 58 &&
-    margin < 3
-  ) {
-    show = false;
-  }
-
-
-  /*
-    激アツはかなり厳選
-  */
-  const hot =
-    confidence >= 87 &&
-    first.boat === 1 &&
-    boat1.course === 1 &&
-    margin >= 10 &&
-    boat1.nationalWin >= 6.0;
-
-
-  /*
-    理由
-  */
-  const reasons = [];
-
-  if (first.boat === 1) {
-    reasons.push("1号艇を中心評価");
-  } else {
-    reasons.push(`${first.boat}号艇を総合1位評価`);
-  }
-
-  if (boat1.course === 1) {
-    reasons.push("イン進入");
-  } else if (boat1.course > 1) {
-    reasons.push(`1号艇${boat1.course}コース`);
-  }
-
-  if (boat1.nationalWin >= 6.0) {
-    reasons.push(
-      `全国勝率${boat1.nationalWin.toFixed(2)}`
-    );
-  }
-
-  if (boat1.national3 >= 55) {
-    reasons.push(
-      `全国3連対率${boat1.national3.toFixed(1)}%`
-    );
-  }
-
-  if (boat1.exhibitionTime > 0) {
-    reasons.push(
-      `展示${boat1.exhibitionTime.toFixed(2)}`
-    );
-  }
-
-  if (boat1.exhibitionST > 0) {
-    reasons.push(
-      `展示ST${boat1.exhibitionST.toFixed(2)}`
-    );
-  }
-
-
-  return {
-
-    race,
-
-    stadiumNumber,
-
-    stadium:
-      STADIUMS[stadiumNumber] ||
-      String(stadiumNumber),
-
-    raceNumber:
-      num(
-        race.race_number ??
-        race.raceNo ??
-        race.number
-      ),
-
-    closedAt:
-      getCutoff(race),
-
-    title:
-      race.title ||
-      race.name ||
-      "",
-
-    subtitle:
-      race.subtitle ||
-      "",
-
-    grade:
-      gradeName(race.grade_number),
-
-    dayNumber:
-      race.day_number ??
-      race.day ??
-      "",
-
-    confidence,
-
-    level,
-
-    hot,
-
-    show,
-
-    first,
-
-    second,
-
-    third,
-
-    secondCandidates,
-
-    thirdCandidates,
-
-    margin,
-
-    bets,
-
-    reasons,
-
-    signature: JSON.stringify({
-      first: first.boat,
-      second: second.boat,
-      third: third.boat,
-      confidence,
-      course: boat1.course,
-      exhibitionST: boat1.exhibitionST,
-      exhibitionTime: boat1.exhibitionTime
-    }),
-
-    boats
-
-  };
-}
-
-
-/* =========================================================
-   予想変更履歴
-========================================================= */
-
-function predictionKey(item) {
-
-  return [
-    todayString(),
-    item.stadiumNumber,
-    item.raceNumber
-  ].join("-");
-
-}
-
-function getPrevious(key) {
-
-  try {
-    const data =
-      JSON.parse(
-        localStorage.getItem(
-          "boatPredictions"
-        ) || "{}"
-      );
-
-    return data[key] || null;
-
-  } catch {
-    return null;
-  }
-
-}
-
-function savePrediction(item) {
-
-  try {
-
-    const data =
-      JSON.parse(
-        localStorage.getItem(
-          "boatPredictions"
-        ) || "{}"
-      );
-
-    data[predictionKey(item)] = {
-      signature: item.signature,
-      confidence: item.confidence,
-      first: item.first.boat,
-      bets: item.bets,
-      updatedAt: new Date().toISOString()
-    };
-
-    localStorage.setItem(
-      "boatPredictions",
-      JSON.stringify(data)
-    );
-
-  } catch {}
-
-}
-
-function changeReason(item) {
-
-  const key =
-    predictionKey(item);
-
-  const previous =
-    getPrevious(key);
-
-  if (!previous) {
-    return "";
-  }
-
-  const reasons = [];
-
-  if (
-    previous.first !==
-    item.first.boat
-  ) {
-    reasons.push(
-      `本命が${previous.first}号艇→${item.first.boat}号艇`
-    );
-  }
-
-  if (
-    Math.abs(
-      num(previous.confidence) -
-      item.confidence
-    ) >= 5
-  ) {
-    reasons.push(
-      `信頼度${previous.confidence}→${item.confidence}`
-    );
-  }
-
-  if (
-    JSON.stringify(previous.bets) !==
-    JSON.stringify(item.bets)
-  ) {
-    reasons.push("買い目を変更");
-  }
-
-  return reasons.join(" / ");
-}
-
-
-/* =========================================================
-   購入履歴
-========================================================= */
-
-function getPurchased() {
-
-  try {
-
-    return JSON.parse(
-      localStorage.getItem(
-        "boatPurchased"
-      ) || "[]"
-    );
-
-  } catch {
-
-    return [];
-
-  }
-
-}
-
-function savePurchased(data) {
-
-  localStorage.setItem(
-    "boatPurchased",
-    JSON.stringify(data)
-  );
-
-}
-
-function purchaseKey(item) {
-
-  return [
-    item.stadiumNumber,
-    item.raceNumber,
-    item.race?.date ||
-      todayString()
-  ].join("-");
-}
-
-function isPurchased(item) {
-
-  const key =
-    purchaseKey(item);
-
-  return getPurchased()
-    .some(
-      (p) => p.key === key
-    );
-
-}
-
-function purchaseRace(item) {
-
-  const list =
-    getPurchased();
-
-  const key =
-    purchaseKey(item);
-
-  if (
-    list.some(
-      (p) => p.key === key
-    )
-  ) {
-    return;
-  }
-
-  list.push({
-
-    key,
-
-    date:
-      item.race?.date ||
-      todayString(),
-
-    stadiumNumber:
-      item.stadiumNumber,
-
-    stadium:
-      item.stadium,
-
-    raceNumber:
-      item.raceNumber,
-
-    title:
-      item.title,
-
-    subtitle:
-      item.subtitle,
-
-    grade:
-      item.grade,
-
-    closedAt:
-      item.closedAt,
-
-    level:
-      item.level,
-
-    confidence:
-      item.confidence,
-
-    first:
-      item.first?.boat,
-
-    bets:
-      item.bets,
-
-    boughtAt:
-      new Date().toISOString(),
-
-    result:
-      null
-
-  });
-
-  savePurchased(list);
-
-  updatePurchasedCount();
-
-  renderCurrentCards();
-
-}
-
-
-/* =========================================================
-   結果
-========================================================= */
-
-function normalizeCombination(value) {
-
-  if (!value) return "";
-
-  const s =
-    String(value)
-      .replace(/[=\-→>]/g, "-")
-      .replace(/\s/g, "");
-
-  const nums =
-    s.match(/\d/g);
-
-  if (!nums || nums.length < 3) {
-    return "";
-  }
-
-  return nums
-    .slice(0, 3)
-    .join("-");
-
-}
-
-function getTrifectaResult(race) {
-
-  const result =
-    race?.result;
-
-  if (!result) {
-    return "";
-  }
-
-  const payouts =
-    result.payouts ||
-    result.payoffs ||
-    {};
-
-  const trifecta =
-    payouts.trifecta ||
-    payouts["3t"] ||
-    payouts.sanrentan;
-
-  if (Array.isArray(trifecta)) {
-
-    const first =
-      trifecta[0];
-
-    if (typeof first === "string") {
-      return normalizeCombination(first);
+    body {
+      margin: 0;
+      background: #08111f;
+      color: #e8eef5;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+      line-height: 1.5;
     }
 
-    if (first?.combination) {
-      return normalizeCombination(
-        first.combination
-      );
+    button {
+      font-family: inherit;
     }
 
-    if (first?.result) {
-      return normalizeCombination(
-        first.result
-      );
+    .app {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px 16px 40px;
     }
 
-  }
-
-  if (typeof trifecta === "string") {
-    return normalizeCombination(
-      trifecta
-    );
-  }
-
-  return "";
-
-}
-
-function saveResultForPurchase(
-  item,
-  result
-) {
-
-  const list =
-    getPurchased();
-
-  const index =
-    list.findIndex(
-      (p) => p.key === item.key
-    );
-
-  if (index < 0) {
-    return;
-  }
-
-  list[index].result =
-    result;
-
-  savePurchased(list);
-
-}
-
-
-/* =========================================================
-   購入件数
-========================================================= */
-
-function updatePurchasedCount() {
-
-  const el =
-    $("purchased-count");
-
-  if (!el) return;
-
-  el.textContent =
-    getPurchased().length;
-
-}
-
-
-/* =========================================================
-   買い目表示
-========================================================= */
-
-function renderBet(bet) {
-
-  const parts =
-    String(bet).split("-");
-
-  return `
-    <div class="bet">
-      ${esc(parts[0])}
-      <i>→</i>
-      ${esc(parts[1])}
-      <i>→</i>
-      ${esc(parts[2])}
-    </div>
-  `;
-
-}
-
-
-/* =========================================================
-   レースカード
-========================================================= */
-
-function renderRace(item) {
-
-  const purchased =
-    isPurchased(item);
-
-  const reason =
-    changeReason(item);
-
-  const first =
-    item.first;
-
-  const second =
-    item.second;
-
-  const third =
-    item.third;
-
-  const racerHTML =
-    item.boats
-      .map((b) => {
-
-        return `
-          <div class="racer">
-
-            <div class="racer-no">
-              ${b.boat}
-            </div>
-
-            <div class="racer-info">
-
-              <b>
-                ${esc(b.name)}
-              </b>
-
-              <span>
-                ${esc(rankName(b.rank))}
-                /
-                勝率${b.nationalWin.toFixed(2)}
-                /
-                3連対${b.national3.toFixed(1)}%
-              </span>
-
-            </div>
-
-            ${
-              b.exhibitionTime
-                ? `
-                  <div class="racer-time">
-                    ${b.exhibitionTime.toFixed(2)}
-                  </div>
-                `
-                : ""
-            }
-
-          </div>
-        `;
-
-      })
-      .join("");
-
-
-  return `
-
-    <article
-      class="race-card ${item.hot ? "hot" : ""}"
-    >
-
-      <div class="race-top">
-
-        <div>
-
-          <div class="race-title">
-
-            ${esc(item.stadium)}
-            ${esc(item.raceNumber)}R
-
-            <span class="grade">
-              ${esc(item.grade)}
-            </span>
-
-          </div>
-
-          <div class="event-title">
-            ${esc(item.title)}
-          </div>
-
-          ${
-            item.subtitle
-              ? `
-                <div class="subtitle">
-                  ${esc(item.subtitle)}
-                </div>
-              `
-              : ""
-          }
-
-          <div class="deadline">
-            締切 ${esc(fmtTime(item.closedAt))}
-          </div>
-
-        </div>
-
-
-        <div class="confidence">
-
-          <span
-            class="${
-              item.hot
-                ? "level hot-level"
-                : "level"
-            }"
-          >
-            ${item.hot ? "激アツ" : esc(item.level)}
-          </span>
-
-          <strong>
-            ${item.confidence}
-          </strong>
-
-          <small>
-            信頼度
-          </small>
-
-        </div>
-
-      </div>
-
-
-      <div class="main-pick">
-
-        <div class="pick-label">
-          1着本命
-        </div>
-
-        <div class="pick-name">
-          ${first.boat}号艇
-          ${esc(first.name)}
-        </div>
-
-        <div class="pick-reason">
-          ${esc(item.reasons.join(" / "))}
-        </div>
-
-      </div>
-
-
-      <div class="place">
-
-        <div>
-
-          <b>2着候補</b>
-
-          ${
-            item.secondCandidates
-              .map(
-                (b) =>
-                  `${b.boat} ${esc(b.name)}`
-              )
-              .join(" / ")
-          }
-
-        </div>
-
-
-        <div>
-
-          <b>3着候補</b>
-
-          ${
-            item.thirdCandidates
-              .map(
-                (b) =>
-                  `${b.boat} ${esc(b.name)}`
-              )
-              .join(" / ")
-          }
-
-        </div>
-
-      </div>
-
-
-      <div class="bets">
-
-        <div class="bets-title">
-          推奨買い目
-        </div>
-
-        <div class="bet-list">
-
-          ${item.bets
-            .map(renderBet)
-            .join("")}
-
-        </div>
-
-      </div>
-
-
-      <div class="buy-area">
-
-        <div class="buy-note">
-          購入記録はこの端末のブラウザに保存
-        </div>
-
-        <button
-          class="buy-button ${
-            purchased ? "purchased" : ""
-          }"
-          data-purchase-key="${esc(
-            purchaseKey(item)
-          )}"
-          type="button"
-        >
-          ${
-            purchased
-              ? "購入済み"
-              : "買った"
-          }
-        </button>
-
-      </div>
-
-
-      ${
-        reason
-          ? `
-            <div class="change">
-              <b>予想変更</b>
-              <span>${esc(reason)}</span>
-            </div>
-          `
-          : ""
-      }
-
-
-      <div class="racers">
-
-        ${racerHTML}
-
-      </div>
-
-    </article>
-
-  `;
-
-}
-
-
-/* =========================================================
-   開催場タブ
-========================================================= */
-
-let currentItems = [];
-let currentStadium = null;
-
-function renderTabs(items) {
-
-  const groups = {};
-
-  items.forEach((item) => {
-
-    if (!groups[item.stadiumNumber]) {
-      groups[item.stadiumNumber] = [];
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    groups[item.stadiumNumber].push(item);
-
-  });
-
-
-  const stadiumNumbers =
-    Object.keys(groups)
-      .map(Number)
-      .sort((a, b) => a - b);
-
-
-  if (!stadiumNumbers.length) {
-    return "";
-  }
-
-
-  if (
-    currentStadium === null ||
-    !groups[currentStadium]
-  ) {
-    currentStadium =
-      stadiumNumbers[0];
-  }
-
-
-  return `
-
-    <div class="stadium-tabs">
-
-      ${stadiumNumbers
-        .map((n) => {
-
-          const active =
-            n === currentStadium
-              ? "active"
-              : "";
-
-          return `
-
-            <button
-              class="stadium-tab ${active}"
-              data-stadium="${n}"
-              type="button"
-            >
-
-              <span>
-                ${esc(STADIUMS[n])}
-              </span>
-
-              <small>
-                ${groups[n].length}R
-              </small>
-
-            </button>
-
-          `;
-
-        })
-        .join("")}
-
-    </div>
-
-  `;
-
-}
-
-function setupTabs() {
-
-  document
-    .querySelectorAll(".stadium-tab")
-    .forEach((button) => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          currentStadium =
-            num(
-              button.dataset.stadium
-            );
-
-          renderCurrentCards();
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
-
-        }
-      );
-
-    });
-
-}
-
-
-/* =========================================================
-   現在のカードを描画
-========================================================= */
-
-function renderCurrentCards() {
-
-  const picks =
-    $("picks");
-
-  if (!picks) return;
-
-
-  const hotItems =
-    currentItems
-      .filter((x) => x.hot)
-      .sort(
-        (a, b) =>
-          b.confidence -
-          a.confidence
-      );
-
-
-  const normalItems =
-    currentItems
-      .filter((x) => !x.hot)
-      .sort(
-        (a, b) =>
-          b.confidence -
-          a.confidence
-      );
-
-
-  let html = "";
-
-
-  /* 激アツ */
-  html += `
-
-    <section class="hot-section">
-
-      <div class="section-title">
-
-        <span>
-          激アツ
-        </span>
-
-        <small>
-          特に自信の高いレース
-        </small>
-
-      </div>
-
-      ${
-        hotItems.length
-          ? hotItems
-              .map(renderRace)
-              .join("")
-          : `
-            <div class="no-hot">
-              現在、激アツ判定はありません
-            </div>
-          `
-      }
-
-    </section>
-
-  `;
-
-
-  /* その他 */
-  html += `
-
-    <section>
-
-      <div class="normal-title">
-        その他の推奨レース
-      </div>
-
-      ${renderTabs(normalItems)}
-
-      <div>
-
-        ${
-          normalItems
-            .filter(
-              (x) =>
-                x.stadiumNumber ===
-                currentStadium
-            )
-            .map(renderRace)
-            .join("")
-        }
-
-      </div>
-
-    </section>
-
-  `;
-
-
-  picks.innerHTML = html;
-
-
-  setupTabs();
-
-
-  /*
-    買ったボタン
-  */
-  document
-    .querySelectorAll(
-      ".buy-button"
-    )
-    .forEach((button) => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          const key =
-            button.dataset.purchaseKey;
-
-          const item =
-            currentItems.find(
-              (x) =>
-                purchaseKey(x) === key
-            );
-
-          if (!item) return;
-
-          purchaseRace(item);
-
-        }
-      );
-
-    });
-
-
-  updatePurchasedCount();
-
-}
-
-
-/* =========================================================
-   購入ページ
-========================================================= */
-
-async function loadPurchasedPage() {
-
-  const listEl =
-    $("purchase-list");
-
-  if (!listEl) {
-    return;
-  }
-
-  let purchases =
-    getPurchased();
-
-
-  const total =
-    $("total-count");
-
-  if (total) {
-    total.textContent =
-      purchases.length;
-  }
-
-
-  if (!purchases.length) {
-
-    listEl.innerHTML = `
-
-      <div class="empty">
-
-        <div class="empty-title">
-          まだ購入履歴がありません
-        </div>
-
-        <div class="empty-text">
-          予想一覧で「買った」を押すと
-          ここに保存されます。
-        </div>
-
-      </div>
-
-    `;
-
-    updatePurchaseSummary(
-      purchases
-    );
-
-    setupClearAll();
-
-    return;
-  }
-
-
-  /*
-    過去の購入についても、
-    購入日のAPIを確認する。
-  */
-
-  for (
-    const purchase of purchases
-  ) {
-
-    if (purchase.result) {
-      continue;
+    .eyebrow {
+      margin-bottom: 3px;
+      color: #66809a;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
     }
 
-    try {
-
-      const date =
-        String(
-          purchase.date ||
-          todayString()
-        ).replace(
-          /-/g,
-          ""
-        );
-
-      const year =
-        date.slice(0, 4);
-
-      const url =
-        `https://boatraceopenapi.github.io/api/v1/${year}/${date}.json`;
-
-      const response =
-        await fetch(url, {
-          cache: "no-store"
-        });
-
-      if (!response.ok) {
-        continue;
-      }
-
-      const data =
-        await response.json();
-
-      const stadium =
-        data?.programs?.stadiums?.[
-          purchase.stadiumNumber
-        ];
-
-      const race =
-        stadium?.races?.[
-          purchase.raceNumber
-        ];
-
-      const result =
-        getTrifectaResult(race);
-
-      if (result) {
-
-        purchase.result = {
-          combination: result,
-          checkedAt:
-            new Date().toISOString()
-        };
-
-      }
-
-    } catch {}
-
-  }
-
-
-  savePurchased(purchases);
-
-  updatePurchaseSummary(
-    purchases
-  );
-
-
-  listEl.innerHTML =
-    purchases
-      .slice()
-      .reverse()
-      .map((purchase) => {
-
-        const result =
-          purchase.result?.combination ||
-          "";
-
-        let badge =
-          "結果待ち";
-
-        let cls = "";
-
-        if (result) {
-
-          const hit =
-            purchase.bets
-              .map(
-                normalizeCombination
-              )
-              .includes(result);
-
-          if (hit) {
-            badge = "的中";
-            cls = "hit";
-          } else {
-            badge = "不的中";
-            cls = "miss";
-          }
-
-        }
-
-        return `
-
-          <article
-            class="purchase-card ${cls}"
-          >
-
-            <div class="card-top">
-
-              <div>
-
-                <div class="race-name">
-                  ${esc(
-                    purchase.stadium
-                  )}
-                  ${esc(
-                    purchase.raceNumber
-                  )}R
-                </div>
-
-                <div class="race-sub">
-                  ${esc(
-                    purchase.title ||
-                    ""
-                  )}
-                </div>
-
-              </div>
-
-
-              <div
-                class="result-badge ${cls}"
-              >
-                ${badge}
-              </div>
-
-            </div>
-
-
-            <div class="details">
-
-              <div class="detail">
-                <span>購入時の信頼度</span>
-                <b>
-                  ${esc(
-                    purchase.confidence
-                  )}
-                </b>
-              </div>
-
-              <div class="detail">
-                <span>購入時の本命</span>
-                <b>
-                  ${esc(
-                    purchase.first
-                  )}号艇
-                </b>
-              </div>
-
-              <div class="detail">
-                <span>締切</span>
-                <b>
-                  ${esc(
-                    fmtTime(
-                      purchase.closedAt
-                    )
-                  )}
-                </b>
-              </div>
-
-              <div class="detail">
-                <span>購入日時</span>
-                <b>
-                  ${esc(
-                    new Date(
-                      purchase.boughtAt
-                    ).toLocaleString(
-                      "ja-JP"
-                    )
-                  )}
-                </b>
-              </div>
-
-            </div>
-
-
-            <div class="bets">
-
-              <div class="bets-label">
-                購入した買い目
-              </div>
-
-              <div class="bet-list">
-
-                ${
-                  purchase.bets
-                    .map(
-                      (bet) =>
-                        `<div class="bet">
-                          ${esc(bet)}
-                        </div>`
-                    )
-                    .join("")
-                }
-
-              </div>
-
-            </div>
-
-
-            ${
-              result
-                ? `
-                  <div class="actual-result">
-                    実際の結果：
-                    <strong>
-                      ${esc(result)}
-                    </strong>
-                  </div>
-                `
-                : ""
-            }
-
-
-            <div class="delete-area">
-
-              <button
-                class="delete-button"
-                data-delete-key="${esc(
-                  purchase.key
-                )}"
-                type="button"
-              >
-                この履歴を削除
-              </button>
-
-            </div>
-
-          </article>
-
-        `;
-
-      })
-      .join("");
-
-
-  setupDeleteButtons();
-
-  setupClearAll();
-
-}
-
-
-/* =========================================================
-   購入ページ集計
-========================================================= */
-
-function updatePurchaseSummary(
-  purchases
-) {
-
-  const total =
-    $("total-count");
-
-  const settled =
-    $("settled-count");
-
-  const rate =
-    $("hit-rate");
-
-
-  const settledPurchases =
-    purchases.filter(
-      (p) =>
-        p.result &&
-        p.result.combination
-    );
-
-
-  let hits = 0;
-
-
-  settledPurchases.forEach(
-    (p) => {
-
-      const result =
-        normalizeCombination(
-          p.result.combination
-        );
-
-      if (
-        p.bets
-          .map(
-            normalizeCombination
-          )
-          .includes(result)
-      ) {
-        hits++;
-      }
-
-    }
-  );
-
-
-  if (total) {
-    total.textContent =
-      purchases.length;
-  }
-
-  if (settled) {
-    settled.textContent =
-      settledPurchases.length;
-  }
-
-  if (rate) {
-
-    rate.textContent =
-      settledPurchases.length
-        ? `${(
-            hits /
-            settledPurchases.length *
-            100
-          ).toFixed(1)}%`
-        : "-";
-
-  }
-
-}
-
-function setupDeleteButtons() {
-
-  document
-    .querySelectorAll(
-      ".delete-button"
-    )
-    .forEach((button) => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          const key =
-            button.dataset.deleteKey;
-
-          const list =
-            getPurchased()
-              .filter(
-                (p) =>
-                  p.key !== key
-              );
-
-          savePurchased(list);
-
-          loadPurchasedPage();
-
-        }
-      );
-
-    });
-
-}
-
-function setupClearAll() {
-
-  const button =
-    $("clear-all");
-
-  if (!button) return;
-
-  button.onclick =
-    () => {
-
-      const list =
-        getPurchased();
-
-      if (!list.length) {
-        return;
-      }
-
-      if (
-        !confirm(
-          "購入履歴をすべて削除しますか？"
-        )
-      ) {
-        return;
-      }
-
-      localStorage.removeItem(
-        "boatPurchased"
-      );
-
-      loadPurchasedPage();
-
-    };
-
-}
-
-
-/* =========================================================
-   全データ読み込み
-========================================================= */
-
-let allScored = [];
-
-async function load() {
-
-  const status =
-    $("status");
-
-  const updated =
-    $("updated");
-
-  if (status) {
-    status.textContent =
-      "データ取得中…";
-  }
-
-
-  try {
-
-    const controller =
-      new AbortController();
-
-    const timeout =
-      setTimeout(
-        () => controller.abort(),
-        20000
-      );
-
-
-    const response =
-      await fetch(API, {
-        cache: "no-store",
-        signal:
-          controller.signal
-      });
-
-
-    clearTimeout(timeout);
-
-
-    if (!response.ok) {
-      throw new Error(
-        `HTTP ${response.status}`
-      );
+    h1 {
+      margin: 0;
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
     }
 
-
-    const data =
-      await response.json();
-
-
-    const stadiums =
-      data?.programs?.stadiums;
-
-
-    if (!stadiums) {
-      throw new Error(
-        "stadiumsが見つかりません"
-      );
+    .muted {
+      color: #71859a;
+      font-size: 10px;
     }
 
-
-    const scored = [];
-
-
-    /*
-      24場 × 最大12Rを全部分析
-    */
-    Object.keys(stadiums)
-      .forEach(
-        (stadiumKey) => {
-
-          const stadium =
-            stadiums[stadiumKey];
-
-          const races =
-            stadium?.races ||
-            {};
-
-
-          Object.keys(races)
-            .forEach(
-              (raceKey) => {
-
-                const race =
-                  races[raceKey];
-
-
-                const stadiumNumber =
-                  num(
-                    race.stadium_number ??
-                    stadiumKey
-                  );
-
-
-                /*
-                  結果がある場合は
-                  購入履歴側の判定用に保存
-                */
-                const result =
-                  getTrifectaResult(
-                    race
-                  );
-
-
-                if (result) {
-
-                  const purchases =
-                    getPurchased();
-
-                  const key =
-                    [
-                      race.date ||
-                        todayString(),
-                      stadiumNumber,
-                      num(
-                        race.race_number ??
-                        raceKey
-                      )
-                    ].join("-");
-
-
-                  const index =
-                    purchases.findIndex(
-                      (p) =>
-                        p.key === key
-                    );
-
-
-                  if (
-                    index >= 0 &&
-                    !purchases[index].result
-                  ) {
-
-                    purchases[index].result = {
-                      combination:
-                        result,
-                      checkedAt:
-                        new Date().toISOString()
-                    };
-
-                    savePurchased(
-                      purchases
-                    );
-
-                  }
-
-                }
-
-
-                /*
-                  締切済みは通常予想に入れない
-                */
-                if (
-                  isPastCutoff(race)
-                ) {
-                  return;
-                }
-
-
-                const item =
-                  scoreRace(
-                    race,
-                    stadiumNumber
-                  );
-
-
-                if (!item) {
-                  return;
-                }
-
-
-                item.change =
-                  changeReason(item);
-
-
-                savePrediction(item);
-
-
-                /*
-                  推奨候補を全部残す
-                */
-                if (item.show) {
-
-                  scored.push(item);
-
-                }
-
-              }
-            );
-
-        }
-      );
-
-
-    /*
-      信頼度順
-    */
-    scored.sort(
-      (a, b) =>
-        b.confidence -
-        a.confidence
-    );
-
-
-    /*
-      重要：
-      条件を満たすレースが少なすぎても、
-      上位候補を表示する。
-      
-      ただし大量には出さない。
-    */
-
-    let selected =
-      scored.slice(0, 24);
-
-
-    /*
-      もし24件未満なら、
-      confidence 55以上まで広げる。
-    */
-
-    if (
-      selected.length < 10
-    ) {
-
-      const fallback =
-        allCandidateRaces(
-          stadiums
-        );
-
-      selected =
-        fallback
-          .filter(
-            (x) =>
-              !selected.some(
-                (s) =>
-                  predictionKey(s) ===
-                  predictionKey(x)
-              )
-          )
-          .concat(selected)
-          .sort(
-            (a, b) =>
-              b.confidence -
-              a.confidence
-          )
-          .slice(0, 20);
-
+    .header-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
     }
 
-
-    allScored =
-      selected;
-
-    currentItems =
-      selected;
-
-    currentStadium = null;
-
-
-    /*
-      状況表示
-    */
-    if (status) {
-
-      status.textContent =
-        `${Object.keys(stadiums).length}場・全レース分析 / ${selected.length}レース推奨`;
-
+    .refresh,
+    .purchase-link {
+      padding: 9px 12px;
+      border: 1px solid #27435f;
+      border-radius: 10px;
+      background: #10263d;
+      color: #dcecff;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
     }
 
-
-    if (updated) {
-
-      updated.textContent =
-        `更新 ${new Date().toLocaleTimeString(
-          "ja-JP",
-          {
-            hour: "2-digit",
-            minute: "2-digit"
-          }
-        )}`;
-
+    .status-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 14px;
+      margin-bottom: 15px;
+      border: 1px solid #1b334d;
+      border-radius: 13px;
+      background: #0c1c2e;
     }
 
-
-    renderCurrentCards();
-
-    updatePurchasedCount();
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    if (status) {
-
-      status.textContent =
-        "データ取得に失敗しました";
-
+    .status-title {
+      margin-bottom: 2px;
+      color: #71869d;
+      font-size: 9px;
+      font-weight: 800;
     }
 
-    if ($("picks")) {
-
-      $("picks").innerHTML = `
-
-        <div class="empty">
-
-          <div class="empty-title">
-            データを取得できませんでした
-          </div>
-
-          <div class="empty-text">
-            更新ボタンを押して
-            もう一度試してください。
-          </div>
-
-        </div>
-
-      `;
-
+    #status {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
     }
 
-  }
-
-}
-
-
-/* =========================================================
-   フォールバック候補生成
-========================================================= */
-
-function allCandidateRaces(
-  stadiums
-) {
-
-  const result = [];
-
-
-  Object.keys(stadiums)
-    .forEach(
-      (stadiumKey) => {
-
-        const stadium =
-          stadiums[stadiumKey];
-
-        const races =
-          stadium?.races ||
-          {};
-
-
-        Object.keys(races)
-          .forEach(
-            (raceKey) => {
-
-              const race =
-                races[raceKey];
-
-
-              if (
-                isPastCutoff(race)
-              ) {
-                return;
-              }
-
-
-              const item =
-                scoreRace(
-                  race,
-                  num(
-                    race.stadium_number ??
-                    stadiumKey
-                  )
-                );
-
-
-              if (!item) {
-                return;
-              }
-
-
-              /*
-                フォールバックでは
-                show条件を無視して
-                点数だけで候補化。
-              */
-              item.show = true;
-
-              item.level =
-                item.confidence >= 82
-                  ? "本命"
-                  : item.confidence >= 68
-                    ? "有力"
-                    : "候補";
-
-
-              item.hot =
-                item.confidence >= 90 &&
-                item.first.boat === 1 &&
-                item.first.course === 1;
-
-
-              result.push(item);
-
-            }
-          );
-
-      }
-    );
-
-
-  return result.sort(
-    (a, b) =>
-      b.confidence -
-      a.confidence
-  );
-
-}
-
-
-/* =========================================================
-   購入ページかどうか
-========================================================= */
-
-if ($("purchase-list")) {
-
-  loadPurchasedPage();
-
-} else {
-
-  load();
-
-}
-
-
-/* =========================================================
-   更新
-========================================================= */
-
-const refresh =
-  $("refresh");
-
-if (refresh) {
-
-  refresh.addEventListener(
-    "click",
-    () => {
-
-      load();
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   3分ごとに自動更新
-========================================================= */
-
-setInterval(
-  () => {
-
-    if (!$("purchase-list")) {
-      load();
+    .analysis-info {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
     }
 
-  },
-  180000
-);
+    .info-chip {
+      padding: 6px 9px;
+      border: 1px solid #19334c;
+      border-radius: 8px;
+      background: #0b1a2b;
+      color: #71869d;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .loading {
+      padding: 30px 10px;
+      color: #71869d;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .hot-section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 3px;
+      margin-bottom: 9px;
+    }
+
+    .section-title span {
+      color: #ffd75a;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .section-title small {
+      color: #71869d;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .no-hot {
+      padding: 17px;
+      border: 1px solid #1b334d;
+      border-radius: 13px;
+      background: #0c1c2e;
+      color: #71869d;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .normal-title {
+      padding: 0 3px;
+      margin: 0 0 9px;
+      color: #8ea1b5;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .stadium-tabs {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding: 2px 2px 10px;
+      margin-bottom: 9px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stadium-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .stadium-tab {
+      flex: 0 0 auto;
+      min-width: 76px;
+      padding: 8px 10px;
+      border: 1px solid #1e3953;
+      border-radius: 11px;
+      background: #0c1d30;
+      color: #8da1b5;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .stadium-tab span {
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .stadium-tab small {
+      display: block;
+      margin-top: 1px;
+      color: #60758b;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .stadium-tab.active {
+      border-color: #2b83bf;
+      background: #123a5a;
+      color: #fff;
+    }
+
+    .stadium-tab.active small {
+      color: #91d2fa;
+    }
+
+    .race-card {
+      padding: 15px;
+      margin-bottom: 12px;
+      border: 1px solid #1b334d;
+      border-radius: 15px;
+      background: #0c1c2e;
+      overflow: hidden;
+    }
+
+    .race-card.hot {
+      border-color: #705d22;
+      background: linear-gradient(145deg,#151c25,#0c1c2e);
+    }
+
+    .race-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #172d43;
+    }
+
+    .race-title {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .grade {
+      display: inline-block;
+      padding: 2px 6px;
+      margin-left: 4px;
+      border-radius: 5px;
+      background: #18344c;
+      color: #9ec7e7;
+      font-size: 9px;
+      font-weight: 900;
+      vertical-align: middle;
+    }
+
+    .event-title {
+      max-width: 500px;
+      margin-top: 2px;
+      color: #b2c1cf;
+      font-size: 11px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .subtitle {
+      color: #71869b;
+      font-size: 9px;
+      overflow-wrap: anywhere;
+    }
+
+    .deadline {
+      margin-top: 5px;
+      color: #61778d;
+      font-size: 9px;
+    }
+
+    .confidence {
+      flex: 0 0 auto;
+      min-width: 58px;
+      text-align: right;
+    }
+
+    .confidence strong {
+      display: block;
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .confidence small {
+      color: #667d94;
+      font-size: 8px;
+    }
+
+    .level {
+      display: inline-block;
+      margin-bottom: 4px;
+      color: #8bb7d6;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .hot-level {
+      color: #ffd75a;
+    }
+
+    .main-pick {
+      padding: 13px 0 11px;
+    }
+
+    .pick-label {
+      margin-bottom: 2px;
+      color: #6d8297;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .pick-name {
+      color: #fff;
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .pick-reason {
+      margin-top: 5px;
+      color: #8ca0b3;
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .place {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 11px;
+    }
+
+    .place > div {
+      min-width: 0;
+      padding: 9px;
+      border-radius: 9px;
+      background: #091725;
+      color: #b8c7d5;
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .place b {
+      display: block;
+      margin-bottom: 2px;
+      color: #647b91;
+      font-size: 8px;
+    }
+
+    .bets {
+      padding-top: 10px;
+      border-top: 1px solid #172d43;
+    }
+
+    .bets-title {
+      margin-bottom: 7px;
+      color: #71869b;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .bet-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .bet {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 82px;
+      padding: 8px 10px;
+      border: 1px solid #244c6e;
+      border-radius: 9px;
+      background: #123552;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .bet i {
+      margin: 0 5px;
+      color: #65b8ef;
+      font-style: normal;
+      font-size: 10px;
+    }
+
+    .buy-area {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 11px;
+      padding-top: 10px;
+      border-top: 1px solid #172d43;
+    }
+
+    .buy-note {
+      color: #596f84;
+      font-size: 8px;
+    }
+
+    .buy-button {
+      flex: 0 0 auto;
+      padding: 9px 15px;
+      border: 1px solid #2d638b;
+      border-radius: 9px;
+      background: #123a5a;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .buy-button.purchased {
+      border-color: #39644d;
+      background: #163c2b;
+      color: #9ee0b8;
+    }
+
+    .change {
+      display: flex;
+      gap: 7px;
+      padding: 8px 9px;
+      margin-top: 9px;
+      border-radius: 8px;
+      background: #17283a;
+      color: #9eb0c1;
+      font-size: 9px;
+    }
+
+    .change b {
+      flex: 0 0 auto;
+      color: #e0b84f;
+    }
+
+    .racers {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 5px;
+      margin-top: 12px;
+    }
+
+    .racer {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 7px;
+      padding: 7px;
+      border-radius: 8px;
+      background: #091725;
+    }
+
+    .racer-no {
+      flex: 0 0 22px;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #1b334a;
+      color: #dbe8f3;
+      text-align: center;
+      line-height: 22px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .racer-info {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .racer-info b {
+      display: block;
+      overflow: hidden;
+      color: #b9c8d6;
+      font-size: 9px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .racer-info span {
+      color: #62788e;
+      font-size: 8px;
+    }
+
+    .racer-time {
+      flex: 0 0 auto;
+      margin-left: auto;
+      color: #71869b;
