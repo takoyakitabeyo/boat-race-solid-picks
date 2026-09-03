@@ -2,1382 +2,1496 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>購入済みレース</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>購入済み舟券</title>
 
 <style>
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
+
 body{
   margin:0;
-  background:#061222;
-  color:#eef5ff;
-  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  background:#07111f;
+  color:#e7eef8;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
+    "Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
 }
-button{font:inherit}
+
 .app{
-  width:min(900px,100%);
+  width:min(760px,100%);
   margin:auto;
-  padding:28px 18px 60px;
+  padding:18px 14px 40px;
 }
-.top{
+
+.topbar{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:15px;
-  margin-bottom:25px;
+  gap:12px;
 }
+
 .eyebrow{
-  color:#7390aa;
-  font-size:13px;
-  font-weight:800;
-  letter-spacing:3px;
-  margin-bottom:10px;
+  font-size:10px;
+  letter-spacing:.14em;
+  color:#71839d;
+  margin-bottom:4px;
 }
+
 h1{
   margin:0;
-  font-size:32px;
+  font-size:25px;
+  line-height:1.2;
 }
+
+.muted{
+  color:#8495ad;
+}
+
 .back{
-  border:1px solid #28577d;
-  background:#123452;
-  color:#eef5ff;
-  border-radius:18px;
-  padding:15px 20px;
-  font-weight:800;
-  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:9px 13px;
+  border-radius:10px;
+  border:1px solid #263b58;
+  background:#101d30;
+  color:#dce7f7;
+  text-decoration:none;
+  font-size:12px;
 }
-.tabs{
+
+.summary{
+  margin-top:16px;
+  padding:15px;
+  border:1px solid #21344e;
+  border-radius:15px;
+  background:#0d1929;
+}
+
+.summary-title{
+  color:#8d9bb0;
+  font-size:11px;
+}
+
+.summary-number{
+  font-size:30px;
+  font-weight:800;
+  margin-top:2px;
+}
+
+.summary-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:12px;
-  margin-bottom:20px;
+  gap:7px;
+  margin-top:12px;
 }
-.tab{
-  border:1px solid #1c4264;
-  background:#091c31;
-  color:#8195a9;
-  border-radius:18px;
-  padding:17px 8px;
-  font-weight:800;
+
+.stat{
+  padding:10px;
+  border-radius:10px;
+  background:#111f32;
+  text-align:center;
 }
-.tab.active{
-  background:#153c5d;
-  color:white;
-  border-color:#2c719e;
+
+.stat b{
+  display:block;
+  font-size:18px;
 }
-.summary{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:12px;
-  margin-bottom:28px;
+
+.stat span{
+  color:#8091aa;
+  font-size:10px;
 }
-.box{
-  background:#091c30;
-  border:1px solid #193b5b;
-  border-radius:20px;
-  min-height:120px;
+
+.tabs{
   display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
+  gap:7px;
+  margin-top:14px;
+  overflow-x:auto;
 }
-.num{
-  font-size:34px;
-  font-weight:900;
+
+.tab{
+  flex:0 0 auto;
+  border:1px solid #263b58;
+  background:#101d30;
+  color:#aebbd0;
+  padding:9px 14px;
+  border-radius:999px;
+  font-size:12px;
 }
-.label{
-  margin-top:8px;
-  color:#748ca4;
-  font-size:13px;
-  font-weight:700;
+
+.tab.active{
+  background:#1b314d;
+  color:#fff;
+  border-color:#3c628d;
 }
-.status{
-  color:#8398ad;
-  margin:10px 0 20px;
-  font-size:14px;
+
+.actions{
+  display:flex;
+  gap:7px;
+  margin-top:12px;
 }
+
+.action{
+  flex:1;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #263b58;
+  background:#101d30;
+  color:#dce7f7;
+  font-size:12px;
+}
+
+.list{
+  display:grid;
+  gap:12px;
+  margin-top:14px;
+}
+
 .card{
-  background:#0a1e33;
-  border:1px solid #214a6d;
-  border-radius:24px;
-  padding:26px;
-  margin-bottom:22px;
-  box-shadow:0 8px 25px rgba(0,0,0,.12);
+  background:#0d1929;
+  border:1px solid #21344e;
+  border-radius:16px;
+  padding:15px;
 }
-.card.hit{border-color:#2f9b69}
-.card.miss{border-color:#864848}
-.cardhead{
+
+.card-top{
   display:flex;
   justify-content:space-between;
-  gap:15px;
-  align-items:flex-start;
+  gap:10px;
 }
-.race{
-  font-size:28px;
-  font-weight:900;
+
+.race-name{
+  font-size:19px;
+  font-weight:800;
 }
-.title{
-  color:#8298ae;
-  margin-top:7px;
+
+.race-date{
+  margin-top:3px;
+  color:#8495ad;
+  font-size:11px;
+}
+
+.event{
+  margin-top:6px;
+  color:#c4d0df;
+  font-size:12px;
   line-height:1.5;
 }
-.badge{
-  background:#173149;
-  color:#8ca1b5;
-  border-radius:12px;
-  padding:10px 13px;
-  font-weight:800;
+
+.level{
   white-space:nowrap;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#172940;
+  color:#a9c4e8;
+  font-size:10px;
+  height:max-content;
 }
-.badge.hit{
-  background:#164d38;
-  color:#6ce0a7;
+
+.main{
+  margin-top:12px;
+  padding:11px;
+  background:#0a1423;
+  border:1px solid #263b58;
+  border-radius:12px;
 }
-.badge.miss{
-  background:#4c2424;
-  color:#ff9494;
+
+.main-label{
+  color:#8293aa;
+  font-size:10px;
 }
-.info{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-  margin:25px 0;
-}
-.infoBox{
-  background:#061727;
-  border-radius:16px;
-  padding:17px;
-}
-.infoLabel{
-  color:#6f879e;
-  font-size:13px;
-  margin-bottom:9px;
-}
-.infoValue{
-  font-size:17px;
+
+.main-name{
+  margin-top:2px;
+  font-size:20px;
   font-weight:800;
 }
-.line{
-  height:1px;
-  background:#173b59;
-  margin:20px 0;
+
+.bets-title{
+  margin-top:12px;
+  color:#8293aa;
+  font-size:10px;
 }
-.sectionTitle{
-  color:#8298ae;
-  font-size:14px;
-  font-weight:800;
-  margin-bottom:12px;
-}
+
 .bets{
   display:flex;
   flex-wrap:wrap;
-  gap:10px;
+  gap:6px;
+  margin-top:6px;
 }
+
 .bet{
-  background:#153e60;
-  border:1px solid #28678f;
-  border-radius:13px;
-  padding:12px 17px;
-  font-size:18px;
-  font-weight:900;
+  padding:7px 9px;
+  border-radius:8px;
+  background:#17263b;
+  border:1px solid #2a415f;
+  font-size:12px;
+  font-weight:700;
 }
-.bet.hit{
-  background:#155d40;
-  border-color:#3fbd7c;
-  color:#8affc2;
-}
+
 .result{
-  margin-top:18px;
-  background:#071a2c;
-  border-radius:15px;
-  padding:15px 17px;
-  font-weight:800;
+  margin-top:12px;
+  padding:10px;
+  border-radius:10px;
+  background:#111f32;
+  font-size:12px;
 }
+
 .result.hit{
-  background:#103b2a;
-  color:#75e5ad;
+  border:1px solid #43705b;
+  background:#10251d;
 }
+
 .result.miss{
-  background:#321919;
-  color:#ff9999;
+  border:1px solid #573d42;
+  background:#24161a;
 }
-.result.wait{
-  color:#9aabba;
+
+.result-none{
+  color:#8191a8;
 }
-.actions{
-  display:flex;
-  justify-content:flex-end;
-  margin-top:20px;
+
+.result-title{
+  font-size:10px;
+  color:#8495ad;
 }
+
+.result-combination{
+  margin-top:3px;
+  font-size:18px;
+  font-weight:800;
+}
+
+.purchase-time{
+  margin-top:9px;
+  color:#6f8199;
+  font-size:10px;
+}
+
 .delete{
-  background:transparent;
-  border:1px solid #713c3c;
-  color:#c97979;
-  border-radius:12px;
-  padding:10px 14px;
-  font-weight:800;
+  margin-top:12px;
+  width:100%;
+  padding:9px;
+  border-radius:9px;
+  border:1px solid #3b2b32;
+  background:#17141a;
+  color:#9c8790;
+  font-size:11px;
 }
+
 .empty{
+  padding:30px 15px;
   text-align:center;
-  padding:60px 20px;
-  color:#8095aa;
+  background:#0d1929;
+  border:1px dashed #33445f;
+  border-radius:16px;
+  color:#9baac0;
+  line-height:1.7;
 }
-.bottom{
-  margin-top:30px;
-  display:flex;
-  justify-content:flex-end;
+
+.loading{
+  padding:25px;
+  text-align:center;
+  color:#8d9bb0;
 }
-.clear{
-  border:1px solid #713c3c;
-  background:#241417;
-  color:#d98585;
-  border-radius:14px;
-  padding:12px 16px;
-  font-weight:800;
+
+footer{
+  margin-top:18px;
+  color:#667891;
+  font-size:10px;
+  text-align:center;
 }
-.error{
-  background:#32191b;
-  border:1px solid #713c3c;
-  color:#ffaaaa;
-  padding:16px;
-  border-radius:15px;
-  margin-bottom:20px;
-  display:none;
-}
-@media(max-width:600px){
-  .app{padding:24px 14px 50px}
-  h1{font-size:29px}
-  .back{padding:13px 15px}
-  .summary{grid-template-columns:repeat(2,1fr)}
-  .box{min-height:105px}
-  .card{padding:22px 18px}
-  .race{font-size:25px}
-  .info{gap:10px}
-  .infoBox{padding:14px}
-  .infoValue{font-size:15px}
+
+@media(max-width:520px){
+  h1{
+    font-size:23px;
+  }
+
+  .summary-grid{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .race-name{
+    font-size:18px;
+  }
 }
 </style>
 </head>
 
 <body>
+
 <main class="app">
 
-<header class="top">
-  <div>
-    <div class="eyebrow">BOAT RACE / PURCHASED</div>
-    <h1>購入済みレース</h1>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">BOAT RACE / HISTORY</div>
+      <h1>購入済み舟券</h1>
+      <div class="muted" id="todayText"></div>
+    </div>
+
+    <a class="back" href="index.html">
+      ← 戻る
+    </a>
+  </header>
+
+
+  <section class="summary">
+
+    <div class="summary-title">
+      購入履歴
+    </div>
+
+    <div class="summary-number" id="summaryCount">
+      0
+    </div>
+
+    <div class="summary-grid">
+
+      <div class="stat">
+        <b id="hitCount">0</b>
+        <span>的中</span>
+      </div>
+
+      <div class="stat">
+        <b id="missCount">0</b>
+        <span>ハズレ</span>
+      </div>
+
+      <div class="stat">
+        <b id="hitRate">--</b>
+        <span>的中率</span>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <div class="tabs">
+
+    <button class="tab active" data-period="all">
+      全期間
+    </button>
+
+    <button class="tab" data-period="month">
+      今月
+    </button>
+
+    <button class="tab" data-period="today">
+      今日
+    </button>
+
   </div>
 
-  <button class="back" onclick="goBackToPrediction()">
-    ← 予想一覧
-  </button>
-</header>
 
-<div class="tabs">
-  <button class="tab active" data-period="all">全期間</button>
-  <button class="tab" data-period="month">今月</button>
-  <button class="tab" data-period="today">今日</button>
-</div>
+  <div class="actions">
 
-<section class="summary">
-  <div class="box">
-    <div class="num" id="total">0</div>
-    <div class="label">購入</div>
+    <button class="action" id="refreshBtn">
+      結果を更新
+    </button>
+
+    <button class="action" id="clearBtn">
+      全履歴を削除
+    </button>
+
   </div>
 
-  <div class="box">
-    <div class="num" id="settled">0</div>
-    <div class="label">結果確定</div>
-  </div>
 
-  <div class="box">
-    <div class="num" id="hits">0</div>
-    <div class="label">的中</div>
-  </div>
+  <section id="list" class="list">
+    <div class="loading">
+      購入履歴を読み込み中…
+    </div>
+  </section>
 
-  <div class="box">
-    <div class="num" id="rate">-</div>
-    <div class="label">的中率</div>
-  </div>
-</section>
 
-<div id="status" class="status">
-  購入履歴を読み込んでいます…
-</div>
-
-<div id="error" class="error"></div>
-
-<section id="list"></section>
-
-<div class="bottom">
-  <button id="clear" class="clear">購入履歴を全削除</button>
-</div>
+  <footer>
+    購入履歴はこの端末のブラウザに保存されています
+  </footer>
 
 </main>
 
-<script>
-const PURCHASED_KEY="cyber-hacchan-purchased-v2";
-const OLD_PURCHASED_KEY="cyber-hacchan-purchased";
-const RESULTS_KEY="boatResults";
-const API_BASE="https://boatraceopenapi.github.io/api/v1";
 
-const STADIUMS={
-  1:"桐生",2:"戸田",3:"江戸川",4:"平和島",
-  5:"多摩川",6:"浜名湖",7:"蒲郡",8:"常滑",
-  9:"津",10:"三国",11:"びわこ",12:"住之江",
-  13:"尼崎",14:"鳴門",15:"丸亀",16:"児島",
-  17:"宮島",18:"徳山",19:"下関",20:"若松",
-  21:"芦屋",22:"福岡",23:"唐津",24:"大村"
+<script>
+
+const PURCHASED_KEY =
+  "cyber-hacchan-purchased-v2";
+
+const RESULTS_KEY =
+  "boatResults";
+
+const API_BASE =
+  "https://boatraceopenapi.github.io/api/v1";
+
+
+const STADIUMS = {
+  1:"桐生",
+  2:"戸田",
+  3:"江戸川",
+  4:"平和島",
+  5:"多摩川",
+  6:"浜名湖",
+  7:"蒲郡",
+  8:"常滑",
+  9:"津",
+  10:"三国",
+  11:"びわこ",
+  12:"住之江",
+  13:"尼崎",
+  14:"鳴門",
+  15:"丸亀",
+  16:"児島",
+  17:"宮島",
+  18:"徳山",
+  19:"下関",
+  20:"若松",
+  21:"芦屋",
+  22:"福岡",
+  23:"唐津",
+  24:"大村"
 };
 
-let period="all";
-let purchases=[];
-let results={};
 
-const $=id=>document.getElementById(id);
+let period = "all";
+
+
+const $ = s =>
+  document.querySelector(s);
+
 
 function esc(v){
-  return String(v??"")
+
+  return String(v ?? "")
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+
 }
 
-/* --------------------------------
-   購入履歴
--------------------------------- */
 
-function parsePurchaseStorage(key){
-  try{
-    const raw=JSON.parse(localStorage.getItem(key)||"null");
+/*
+  JSTの日付
+*/
 
-    if(Array.isArray(raw)){
-      return raw;
-    }
+function jstDate(){
 
-    if(raw && Array.isArray(raw.items)){
-      return raw.items;
-    }
+  const parts =
+    new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone:"Asia/Tokyo",
+        year:"numeric",
+        month:"2-digit",
+        day:"2-digit"
+      }
+    ).formatToParts(new Date());
 
-    if(raw && typeof raw==="object"){
-      return Object.values(raw);
-    }
+  const y =
+    parts.find(x => x.type === "year")?.value;
 
-    return [];
-  }catch(e){
-    console.error("購入履歴読み込み失敗",key,e);
-    return [];
-  }
+  const m =
+    parts.find(x => x.type === "month")?.value;
+
+  const d =
+    parts.find(x => x.type === "day")?.value;
+
+  return `${y}-${m}-${d}`;
+
 }
 
-function loadPurchases(){
 
-  let current=parsePurchaseStorage(PURCHASED_KEY);
+function normalizeDate(v){
 
-  /*
-   * 新しいキーが空の場合、旧キーも確認。
-   * これで過去に保存された購入履歴を救出する。
-   */
-  if(!current.length){
-    const old=parsePurchaseStorage(OLD_PURCHASED_KEY);
+  if(!v) return null;
 
-    if(old.length){
-      current=old;
+  const s =
+    String(v).slice(0,10);
 
-      try{
-        localStorage.setItem(
-          PURCHASED_KEY,
-          JSON.stringify(current)
-        );
-      }catch(e){}
-    }
-  }
-
-  return current;
-}
-
-function loadResults(){
-  try{
-    const raw=JSON.parse(
-      localStorage.getItem(RESULTS_KEY)||"{}"
-    );
-
-    return raw && typeof raw==="object" ? raw : {};
-  }catch{
-    return {};
-  }
-}
-
-function savePurchases(){
-  try{
-    localStorage.setItem(
-      PURCHASED_KEY,
-      JSON.stringify(purchases)
-    );
-  }catch(e){
-    console.error("購入履歴保存失敗",e);
-  }
-}
-
-function saveResults(){
-  try{
-    localStorage.setItem(
-      RESULTS_KEY,
-      JSON.stringify(results)
-    );
-  }catch(e){}
-}
-
-/* --------------------------------
-   日付
--------------------------------- */
-
-function cleanDate(v){
-  if(!v) return "";
-
-  const s=String(v);
-
-  const m=s.match(
-    /(20\d{2})[-\/](\d{1,2})[-\/](\d{1,2})/
-  );
-
-  if(!m) return "";
-
-  return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
-}
-
-function getDate(item){
-
-  /*
-   * purchasedAtも追加。
-   * これが昨日の履歴が消える主原因になる可能性がある。
-   */
-  return cleanDate(
-    item.date ||
-    item.raceDate ||
-    item.race_date ||
-    item.eventDate ||
-    item.event_date ||
-    item.purchaseDate ||
-    item.purchasedDate ||
-    item.purchased_at ||
-    item.purchasedAt ||
-    item.createdAt ||
-    item.created_at
-  );
-}
-
-/* --------------------------------
-   場・レース番号
--------------------------------- */
-
-function getStadium(item){
-
-  const value=
-    item.stadium_number ??
-    item.stadiumNumber ??
-    item.stadium_id ??
-    item.stadiumId ??
-    item.stadiumNo ??
-    item.stadium;
-
-  /*
-   * 「浜名湖」のような名前で保存されていた場合にも対応
-   */
-  if(typeof value==="string"){
-
-    const text=value.trim();
-
-    const n=Number(text);
-
-    if(Number.isFinite(n) && n>0){
-      return n;
-    }
-
-    const found=Object.entries(STADIUMS)
-      .find(([,name])=>name===text);
-
-    if(found){
-      return Number(found[0]);
-    }
-  }
-
-  return Number(value);
-}
-
-function getRaceNo(item){
-
-  const value=
-    item.race_number ??
-    item.raceNumber ??
-    item.race_no ??
-    item.raceNo ??
-    item.race;
-
-  return Number(value);
-}
-
-function getKey(item){
-
-  const date=getDate(item);
-  const stadium=getStadium(item);
-  const race=getRaceNo(item);
-
-  if(!date || !stadium || !race){
-    return "";
-  }
-
-  return `${date}-${stadium}-${race}`;
-}
-
-/* --------------------------------
-   買い目
--------------------------------- */
-
-function normalizeBet(v){
-
-  if(v==null) return "";
-
-  if(Array.isArray(v)){
-    return v.map(x=>String(x)).join("-");
-  }
-
-  const s=String(v);
-
-  /*
-   * 1-2-3
-   * 123
-   * 1 → 2 → 3
-   * 1/2/3
-   * などを許容
-   */
-  const nums=s.match(/[1-6]/g);
-
-  if(nums && nums.length>=3){
-    return nums.slice(0,3).join("-");
-  }
-
-  return s
-    .replace(/[^\d]/g,"-")
-    .replace(/-+/g,"-")
-    .replace(/^-|-$/g,"");
-}
-
-function getBets(item){
-
-  let bets=
-    item.bets ??
-    item.buyBets ??
-    item.combinations ??
-    item.combos ??
-    item.betList ??
-    item.buy_list ??
-    item.buyList ??
-    [];
-
-  if(typeof bets==="string"){
-    bets=bets.split(/[,\s\/]+/);
-  }
-
-  if(!Array.isArray(bets)){
-    bets=[bets];
-  }
-
-  return bets
-    .map(normalizeBet)
-    .filter(Boolean);
-}
-
-function normalizeCombination(v){
-  return normalizeBet(v).replace(/-/g,"");
-}
-
-/* --------------------------------
-   結果
--------------------------------- */
-
-function extractResult(race){
-
-  if(!race) return null;
-
-  /*
-   * ① 払戻データ
-   */
-  const trifecta=
-    race.result?.payouts?.trifecta ||
-    race.payouts?.trifecta ||
-    [];
-
-  if(Array.isArray(trifecta) && trifecta.length){
-
-    const first=trifecta[0];
-
-    const combination=
-      first?.combination ??
-      first?.combo ??
-      first?.numbers;
-
-    if(combination){
-
-      return {
-        combination:normalizeBet(combination),
-        payout:first?.amount ??
-               first?.payout ??
-               null
-      };
-    }
-  }
-
-  /*
-   * ② racerのplace_number
-   */
-  const racers=race.result?.racers;
-
-  if(racers && typeof racers==="object"){
-
-    const arr=Object.entries(racers)
-      .map(([entry,data])=>({
-        entry:Number(entry),
-        place:Number(
-          data?.place_number ??
-          data?.place ??
-          data?.rank
-        )
-      }))
-      .filter(
-        x=>Number.isFinite(x.entry) &&
-           Number.isFinite(x.place)
-      );
-
-    const top3=arr
-      .filter(x=>x.place>=1&&x.place<=3)
-      .sort((a,b)=>a.place-b.place);
-
-    if(top3.length===3){
-
-      return {
-        combination:top3
-          .map(x=>x.entry)
-          .join("-"),
-        payout:null
-      };
-    }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
+    return s;
   }
 
   return null;
+
 }
 
-async function fetchJson(url){
 
-  const controller=new AbortController();
+/*
+  ここが今回の重要修正。
 
-  const timer=setTimeout(
-    ()=>controller.abort(),
-    15000
-  );
+  dateが無い古い購入データでも、
+  purchasedAtから日付を復元する。
+*/
 
-  try{
+function getDate(item){
 
-    const res=await fetch(url,{
-      cache:"no-store",
-      signal:controller.signal
-    });
+  const direct =
+    normalizeDate(item.date);
 
-    if(!res.ok){
-      throw new Error(`HTTP ${res.status}`);
-    }
-
-    return await res.json();
-
-  }finally{
-    clearTimeout(timer);
-  }
-}
-
-async function fetchRaceResult(item){
-
-  const date=getDate(item);
-  const stadium=getStadium(item);
-  const raceNo=getRaceNo(item);
-
-  if(!date || !stadium || !raceNo){
-    return null;
+  if(direct){
+    return direct;
   }
 
-  const y=date.slice(0,4);
-  const compact=date.replaceAll("-","");
+  const purchased =
+    item.purchasedAt ||
+    item.purchased_at;
 
-  const url=
-    `${API_BASE}/${y}/${compact}.json`;
-
-  console.log("結果取得:",url);
-
-  const data=await fetchJson(url);
-
-  const stadiums=
-    data?.programs?.stadiums || {};
-
-  const stadiumData=
-    stadiums[String(stadium)] ||
-    stadiums[stadium];
-
-  if(!stadiumData){
-    return null;
-  }
-
-  const races=stadiumData.races || {};
-
-  const race=
-    races[String(raceNo)] ||
-    races[raceNo];
-
-  if(!race){
-    return null;
-  }
-
-  const result=extractResult(race);
-
-  if(!result){
-    return null;
-  }
-
-  const key=
-    `${date}-${stadium}-${raceNo}`;
-
-  results[key]={
-    combination:result.combination,
-    payout:result.payout,
-    at:new Date().toISOString()
-  };
-
-  return results[key];
-}
-
-async function updateResults(){
-
-  const unique=new Map();
-
-  for(const item of purchases){
-
-    const key=getKey(item);
-
-    if(!key) continue;
-
-    if(!unique.has(key)){
-      unique.set(key,item);
-    }
-  }
-
-  const list=[...unique.values()];
-
-  let success=0;
-  let failed=0;
-
-  $("status").textContent=
-    `結果を取得中… 0 / ${list.length}`;
-
-  for(let i=0;i<list.length;i++){
-
-    const item=list[i];
-    const key=getKey(item);
+  if(purchased){
 
     try{
 
-      /*
-       * 結果が保存済みなら再取得不要
-       */
-      const old=results[key];
+      const parts =
+        new Intl.DateTimeFormat(
+          "en-CA",
+          {
+            timeZone:"Asia/Tokyo",
+            year:"numeric",
+            month:"2-digit",
+            day:"2-digit"
+          }
+        ).formatToParts(
+          new Date(purchased)
+        );
 
-      if(old?.combination){
+      const y =
+        parts.find(x => x.type === "year")?.value;
 
-        success++;
+      const m =
+        parts.find(x => x.type === "month")?.value;
 
-      }else{
+      const d =
+        parts.find(x => x.type === "day")?.value;
 
-        const result=
-          await fetchRaceResult(item);
-
-        if(result?.combination){
-          success++;
-        }else{
-          failed++;
-        }
+      if(y && m && d){
+        return `${y}-${m}-${d}`;
       }
 
-    }catch(e){
+    }catch{}
 
-      console.error(
-        "結果取得失敗",
-        key,
-        e
-      );
-
-      failed++;
-    }
-
-    $("status").textContent=
-      `結果を取得中… ${i+1} / ${list.length}`;
-
-    await new Promise(
-      r=>setTimeout(r,250)
-    );
   }
 
-  saveResults();
+  return null;
 
-  return {
-    success,
-    failed,
-    total:list.length
-  };
 }
 
-/* --------------------------------
-   期間
--------------------------------- */
 
-function getToday(){
+/*
+  購入データ読み込み
 
-  const now=new Date();
+  壊れた1件があっても
+  全履歴が消えないようにする。
+*/
 
-  return `${now.getFullYear()}-`+
-    `${String(now.getMonth()+1).padStart(2,"0")}-`+
-    `${String(now.getDate()).padStart(2,"0")}`;
-}
-
-function getCurrentMonth(){
-
-  const now=new Date();
-
-  return `${now.getFullYear()}-`+
-    `${String(now.getMonth()+1).padStart(2,"0")}`;
-}
-
-function isToday(date){
-  return date===getToday();
-}
-
-function isThisMonth(date){
-  return date.startsWith(getCurrentMonth());
-}
-
-function filteredPurchases(){
-
-  return purchases.filter(item=>{
-
-    const date=getDate(item);
-
-    if(period==="today"){
-      return isToday(date);
-    }
-
-    if(period==="month"){
-      return isThisMonth(date);
-    }
-
-    return true;
-  });
-}
-
-/* --------------------------------
-   結果判定
--------------------------------- */
-
-function evaluate(item){
-
-  const key=getKey(item);
-
-  const stored=results[key];
-
-  if(!stored?.combination){
-
-    return {
-      settled:false,
-      hit:false,
-      result:"",
-      payout:null
-    };
-  }
-
-  const actual=
-    normalizeCombination(
-      stored.combination
-    );
-
-  const bets=getBets(item);
-
-  const hit=bets.some(
-    b=>
-      normalizeCombination(b)===actual
-  );
-
-  return {
-    settled:true,
-    hit,
-    result:stored.combination,
-    payout:stored.payout
-  };
-}
-
-/* --------------------------------
-   カード
--------------------------------- */
-
-function renderCard(item,index){
-
-  const stadium=getStadium(item);
-  const raceNo=getRaceNo(item);
-  const date=getDate(item);
-
-  const bets=getBets(item);
-  const ev=evaluate(item);
-
-  const stadiumName=
-    item.stadiumName ||
-    item.stadium_name ||
-    STADIUMS[stadium] ||
-    `場${stadium}`;
-
-  const title=
-    item.title ||
-    item.raceTitle ||
-    item.race_title ||
-    "";
-
-  const grade=
-    item.grade ||
-    item.gradeName ||
-    "";
-
-  const mainNo=
-    item.mainNo ??
-    item.main_number ??
-    item.mainBoat ??
-    item.main_boat ??
-    1;
-
-  const mainName=
-    item.mainName ||
-    item.main_name ||
-    item.mainBoatName ||
-    "";
-
-  const confidence=
-    item.confidence ??
-    item.score ??
-    item.s ??
-    "-";
-
-  let cls="card";
-  let badge="結果待ち";
-  let badgeCls="";
-
-  if(ev.settled){
-
-    if(ev.hit){
-
-      cls+=" hit";
-      badge="的中";
-      badgeCls="hit";
-
-    }else{
-
-      cls+=" miss";
-      badge="ハズレ";
-      badgeCls="miss";
-    }
-  }
-
-  const betsHtml=bets.length
-
-    ? bets.map(b=>{
-
-        const hit=
-          ev.settled &&
-          normalizeCombination(b)===
-          normalizeCombination(ev.result);
-
-        return `
-          <span class="bet ${hit?"hit":""}">
-            ${esc(b)}
-          </span>
-        `;
-
-      }).join("")
-
-    : `<span class="bet">買い目なし</span>`;
-
-  let resultHtml="";
-
-  if(!ev.settled){
-
-    resultHtml=`
-      <div class="result wait">
-        まだ結果が確定していません
-      </div>
-    `;
-
-  }else if(ev.hit){
-
-    resultHtml=`
-      <div class="result hit">
-        結果：${esc(ev.result)}
-        <strong>　的中</strong>
-        ${
-          ev.payout!=null
-          ? `　払戻 ${Number(ev.payout).toLocaleString()}円`
-          : ""
-        }
-      </div>
-    `;
-
-  }else{
-
-    resultHtml=`
-      <div class="result miss">
-        結果：${esc(ev.result)}
-        ${
-          ev.payout!=null
-          ? `　払戻 ${Number(ev.payout).toLocaleString()}円`
-          : ""
-        }
-        <strong>　ハズレ</strong>
-      </div>
-    `;
-  }
-
-  return `
-  <article class="${cls}">
-
-    <div class="cardhead">
-
-      <div>
-
-        <div class="race">
-          ${esc(stadiumName)} ${esc(raceNo)}R
-        </div>
-
-        <div class="title">
-          ${grade?esc(grade)+" / ":""}${esc(title)}
-        </div>
-
-      </div>
-
-      <div class="badge ${badgeCls}">
-        ${badge}
-      </div>
-
-    </div>
-
-    <div class="info">
-
-      <div class="infoBox">
-        <div class="infoLabel">本命</div>
-
-        <div class="infoValue">
-          ${esc(mainNo)}号艇 ${esc(mainName)}
-        </div>
-      </div>
-
-      <div class="infoBox">
-        <div class="infoLabel">自信度</div>
-
-        <div class="infoValue">
-          ${esc(confidence)}
-        </div>
-      </div>
-
-      <div class="infoBox">
-        <div class="infoLabel">購入日</div>
-
-        <div class="infoValue">
-          ${esc(date||"-")}
-        </div>
-      </div>
-
-      <div class="infoBox">
-        <div class="infoLabel">買い目点数</div>
-
-        <div class="infoValue">
-          ${bets.length}点
-        </div>
-      </div>
-
-    </div>
-
-    <div class="line"></div>
-
-    <div class="sectionTitle">
-      推奨買い目
-    </div>
-
-    <div class="bets">
-      ${betsHtml}
-    </div>
-
-    ${resultHtml}
-
-    <div class="actions">
-      <button
-        class="delete"
-        onclick="deletePurchase(${index})">
-        この履歴を削除
-      </button>
-    </div>
-
-  </article>
-  `;
-}
-
-/* --------------------------------
-   表示
--------------------------------- */
-
-function render(){
-
-  const list=filteredPurchases();
-
-  let settled=0;
-  let hits=0;
-
-  list.forEach(item=>{
-
-    const ev=evaluate(item);
-
-    if(ev.settled){
-
-      settled++;
-
-      if(ev.hit){
-        hits++;
-      }
-    }
-  });
-
-  $("total").textContent=list.length;
-  $("settled").textContent=settled;
-  $("hits").textContent=hits;
-
-  $("rate").textContent=
-    settled
-      ? `${Math.round(hits/settled*100)}%`
-      : "-";
-
-  if(!list.length){
-
-    $("list").innerHTML=`
-      <div class="empty">
-        購入済みのレースはありません。
-      </div>
-    `;
-
-    return;
-  }
-
-  /*
-   * 購入日時が無い古いデータも
-   * 消さずに表示する
-   */
-  const sorted=[...list].sort((a,b)=>{
-
-    const da=
-      new Date(
-        a.purchasedAt ||
-        a.purchased_at ||
-        a.createdAt ||
-        a.created_at ||
-        0
-      );
-
-    const db=
-      new Date(
-        b.purchasedAt ||
-        b.purchased_at ||
-        b.createdAt ||
-        b.created_at ||
-        0
-      );
-
-    return db-da;
-  });
-
-  $("list").innerHTML=
-    sorted.map(item=>{
-
-      const originalIndex=
-        purchases.indexOf(item);
-
-      return renderCard(
-        item,
-        originalIndex
-      );
-
-    }).join("");
-}
-
-/* --------------------------------
-   予想一覧へ戻る
--------------------------------- */
-
-function goBackToPrediction(){
-
-  /*
-   * ブラウザ履歴が残っていれば戻る。
-   * 直接購入履歴を開いた場合はindex.htmlへ。
-   */
-  if(history.length>1){
-
-    history.back();
-
-  }else{
-
-    location.href="index.html";
-  }
-}
-
-/* --------------------------------
-   削除
--------------------------------- */
-
-function deletePurchase(index){
-
-  if(!confirm(
-    "この購入履歴を削除しますか？"
-  )) return;
-
-  purchases.splice(index,1);
-
-  savePurchases();
-
-  render();
-}
-
-/* --------------------------------
-   全削除
--------------------------------- */
-
-$("clear").addEventListener(
-  "click",
-  ()=>{
-
-    if(!purchases.length) return;
-
-    if(!confirm(
-      "購入履歴をすべて削除しますか？"
-    )) return;
-
-    localStorage.removeItem(
-      PURCHASED_KEY
-    );
-
-    purchases=[];
-
-    render();
-
-    $("status").textContent=
-      "購入履歴を削除しました";
-  }
-);
-
-/* --------------------------------
-   タブ
--------------------------------- */
-
-document.querySelectorAll(".tab")
-  .forEach(btn=>{
-
-    btn.addEventListener(
-      "click",
-      ()=>{
-
-        document.querySelectorAll(".tab")
-          .forEach(x=>
-            x.classList.remove("active")
-          );
-
-        btn.classList.add("active");
-
-        period=btn.dataset.period;
-
-        render();
-      }
-    );
-  });
-
-/* --------------------------------
-   起動
--------------------------------- */
-
-async function load(){
-
-  purchases=loadPurchases();
-  results=loadResults();
-
-  /*
-   * 必ず全期間を初期表示。
-   * 昨日以前の購入を隠さない。
-   */
-  period="all";
-
-  document.querySelectorAll(".tab")
-    .forEach(x=>x.classList.remove("active"));
-
-  document
-    .querySelector('[data-period="all"]')
-    ?.classList.add("active");
-
-  render();
-
-  if(!purchases.length){
-
-    $("status").textContent=
-      "購入履歴はありません";
-
-    return;
-  }
-
-  $("error").style.display="none";
+function loadPurchased(){
 
   try{
 
-    const info=
-      await updateResults();
+    const raw =
+      localStorage.getItem(
+        PURCHASED_KEY
+      );
 
-    render();
-
-    $("status").textContent=
-      `結果確認完了：${info.success}件取得`;
-
-    if(info.failed>0){
-
-      $("status").textContent+=
-        ` / ${info.failed}件は結果未取得`;
+    if(!raw){
+      return [];
     }
+
+    const data =
+      JSON.parse(raw);
+
+    if(!Array.isArray(data)){
+      return [];
+    }
+
+    return data;
 
   }catch(e){
 
     console.error(e);
 
-    $("error").textContent=
-      "結果データの取得に失敗しました。時間を置いて再読み込みしてください。";
+    return [];
 
-    $("error").style.display="block";
-
-    $("status").textContent=
-      "結果取得に失敗しました";
-
-    render();
   }
+
 }
 
-load();
+
+function savePurchased(list){
+
+  localStorage.setItem(
+    PURCHASED_KEY,
+    JSON.stringify(list)
+  );
+
+}
+
+
+/*
+  結果保存
+*/
+
+function loadResults(){
+
+  try{
+
+    return JSON.parse(
+      localStorage.getItem(
+        RESULTS_KEY
+      ) || "{}"
+    );
+
+  }catch{
+
+    return {};
+
+  }
+
+}
+
+
+function saveResult(
+  date,
+  stadium,
+  race,
+  combination,
+  amount
+){
+
+  if(!date || !stadium || !race || !combination){
+    return;
+  }
+
+  const results =
+    loadResults();
+
+  const key =
+    `${date}-${stadium}-${race}`;
+
+  results[key] = {
+    combination,
+    amount:amount ?? null,
+    at:new Date().toISOString()
+  };
+
+  localStorage.setItem(
+    RESULTS_KEY,
+    JSON.stringify(results)
+  );
+
+}
+
+
+/*
+  購入履歴からAPI取得用URLを作る
+*/
+
+function apiURL(date){
+
+  const compact =
+    date.replaceAll("-","");
+
+  return `${API_BASE}/${date.slice(0,4)}/${compact}.json`;
+
+}
+
+
+async function fetchDate(date){
+
+  try{
+
+    const res =
+      await fetch(
+        apiURL(date),
+        {
+          cache:"no-store"
+        }
+      );
+
+    if(!res.ok){
+      return null;
+    }
+
+    return await res.json();
+
+  }catch(e){
+
+    console.warn(
+      "結果取得失敗:",
+      date,
+      e
+    );
+
+    return null;
+
+  }
+
+}
+
+
+/*
+  過去日の結果を取得
+*/
+
+async function updateResults(){
+
+  const purchases =
+    loadPurchased();
+
+  const dates =
+    [
+      ...new Set(
+        purchases
+          .map(getDate)
+          .filter(Boolean)
+      )
+    ];
+
+  if(!dates.length){
+    return;
+  }
+
+  /*
+    すでに保存されている結果を残しつつ、
+    購入履歴の日付を取得する。
+  */
+
+  for(
+    const date of dates
+  ){
+
+    const data =
+      await fetchDate(date);
+
+    if(!data){
+      continue;
+    }
+
+    const stadiums =
+      data.programs?.stadiums || {};
+
+    for(
+      const stadium of
+      Object.values(stadiums)
+    ){
+
+      for(
+        const race of
+        Object.values(
+          stadium.races || {}
+        )
+      ){
+
+        const trifecta =
+          race.result
+            ?.payouts
+            ?.trifecta
+            ?.[0];
+
+        if(
+          trifecta?.combination
+        ){
+
+          saveResult(
+            race.date,
+            race.stadium_number,
+            race.race_number,
+            trifecta.combination,
+            trifecta.amount
+          );
+
+        }
+
+      }
+
+    }
+
+  }
+
+}
+
+
+/*
+  期間フィルター
+*/
+
+function inPeriod(item){
+
+  const date =
+    getDate(item);
+
+  if(!date){
+    return true;
+  }
+
+  const today =
+    jstDate();
+
+  if(period === "today"){
+    return date === today;
+  }
+
+  if(period === "month"){
+    return date.slice(0,7) === today.slice(0,7);
+  }
+
+  return true;
+
+}
+
+
+/*
+  結果取得
+*/
+
+function getResult(item){
+
+  const results =
+    loadResults();
+
+  const date =
+    getDate(item);
+
+  const stadium =
+    item.stadium_number;
+
+  const race =
+    item.race_number;
+
+  if(
+    !date ||
+    stadium == null ||
+    race == null
+  ){
+
+    return null;
+
+  }
+
+  return results[
+    `${date}-${stadium}-${race}`
+  ] || null;
+
+}
+
+
+/*
+  組み合わせを統一
+*/
+
+function normalizeCombination(v){
+
+  if(v == null){
+    return "";
+  }
+
+  return String(v)
+    .replaceAll(" ","")
+    .replaceAll("→","-")
+    .replaceAll("＝","-")
+    .replaceAll("=","-");
+
+}
+
+
+/*
+  購入舟券の的中判定
+*/
+
+function isHit(item,result){
+
+  if(!result){
+    return false;
+  }
+
+  const actual =
+    normalizeCombination(
+      result.combination
+    );
+
+  const bets =
+    Array.isArray(item.bets)
+      ? item.bets
+      : [];
+
+  return bets.some(
+    bet =>
+      normalizeCombination(bet)
+      === actual
+  );
+
+}
+
+
+/*
+  結果が存在するか
+*/
+
+function hasResult(item){
+
+  return !!getResult(item);
+
+}
+
+
+/*
+  期間内の購入データ
+*/
+
+function currentPurchases(){
+
+  return loadPurchased()
+    .filter(inPeriod)
+    .sort(
+      (a,b) => {
+
+        const da =
+          getDate(a) || "";
+
+        const db =
+          getDate(b) || "";
+
+        if(da !== db){
+          return db.localeCompare(da);
+        }
+
+        const ta =
+          a.purchasedAt || "";
+
+        const tb =
+          b.purchasedAt || "";
+
+        return tb.localeCompare(ta);
+
+      }
+    );
+
+}
+
+
+/*
+  統計
+*/
+
+function renderSummary(list){
+
+  const finished =
+    list.filter(
+      hasResult
+    );
+
+  const hit =
+    finished.filter(
+      x =>
+        isHit(
+          x,
+          getResult(x)
+        )
+    );
+
+  const miss =
+    finished.length - hit.length;
+
+  const rate =
+    finished.length
+      ? `${Math.round(
+          hit.length /
+          finished.length *
+          100
+        )}%`
+      : "--";
+
+  $("#summaryCount").textContent =
+    list.length;
+
+  $("#hitCount").textContent =
+    hit.length;
+
+  $("#missCount").textContent =
+    miss;
+
+  $("#hitRate").textContent =
+    rate;
+
+}
+
+
+/*
+  カード
+*/
+
+function renderCard(item){
+
+  const date =
+    getDate(item) || "日付不明";
+
+  const stadium =
+    STADIUMS[
+      item.stadium_number
+    ] ||
+    item.stadium_name ||
+    `場${item.stadium_number ?? ""}`;
+
+  const race =
+    item.race_number != null
+      ? `${item.race_number}R`
+      : "レース";
+
+  const result =
+    getResult(item);
+
+  const hit =
+    result &&
+    isHit(item,result);
+
+  const bets =
+    Array.isArray(item.bets)
+      ? item.bets
+      : [];
+
+  const betsHTML =
+    bets.length
+      ? bets
+          .map(
+            b =>
+              `<span class="bet">
+                ${esc(b)}
+              </span>`
+          )
+          .join("")
+      : `
+        <span class="bet">
+          買い目なし
+        </span>
+      `;
+
+  let resultHTML = "";
+
+  if(result){
+
+    resultHTML = `
+      <div class="result ${hit ? "hit" : "miss"}">
+
+        <div class="result-title">
+          実際の3連単
+        </div>
+
+        <div class="result-combination">
+          ${esc(result.combination)}
+        </div>
+
+        <div style="margin-top:4px">
+          ${
+            hit
+              ? "的中"
+              : "ハズレ"
+          }
+
+          ${
+            result.amount != null
+              ? ` / 払戻 ${Number(result.amount).toLocaleString()}円`
+              : ""
+          }
+        </div>
+
+      </div>
+    `;
+
+  }else{
+
+    resultHTML = `
+      <div class="result">
+
+        <div class="result-none">
+          結果待ち
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  let purchaseTime = "";
+
+  if(item.purchasedAt){
+
+    try{
+
+      purchaseTime =
+        new Date(
+          item.purchasedAt
+        ).toLocaleString(
+          "ja-JP",
+          {
+            timeZone:"Asia/Tokyo",
+            month:"numeric",
+            day:"numeric",
+            hour:"2-digit",
+            minute:"2-digit"
+          }
+        );
+
+    }catch{}
+
+  }
+
+
+  const key =
+    item.key ||
+    `${date}-${item.stadium_number}-${item.race_number}`;
+
+
+  return `
+
+    <article
+      class="card"
+      data-key="${esc(key)}"
+    >
+
+      <div class="card-top">
+
+        <div>
+
+          <div class="race-name">
+            ${esc(stadium)}
+            ${esc(race)}
+          </div>
+
+          <div class="race-date">
+            ${esc(date)}
+          </div>
+
+          <div class="event">
+            ${esc(
+              item.title ||
+              item.event_title ||
+              ""
+            )}
+          </div>
+
+        </div>
+
+        <div class="level">
+          ${esc(
+            item.level ||
+            "購入済み"
+          )}
+        </div>
+
+      </div>
+
+
+      <div class="main">
+
+        <div class="main-label">
+          1着本命
+        </div>
+
+        <div class="main-name">
+
+          ${
+            item.main != null
+              ? `${esc(item.main)}号艇 `
+              : ""
+          }
+
+          ${esc(
+            item.mainName ||
+            item.main_name ||
+            ""
+          )}
+
+        </div>
+
+      </div>
+
+
+      <div class="bets-title">
+        購入した買い目
+      </div>
+
+      <div class="bets">
+        ${betsHTML}
+      </div>
+
+
+      ${resultHTML}
+
+
+      ${
+        purchaseTime
+          ? `
+            <div class="purchase-time">
+              購入日時：${esc(purchaseTime)}
+            </div>
+          `
+          : ""
+      }
+
+
+      <button
+        class="delete"
+        data-delete="${esc(key)}"
+      >
+        この履歴を削除
+      </button>
+
+    </article>
+
+  `;
+
+}
+
+
+/*
+  一覧表示
+*/
+
+function render(){
+
+  const list =
+    currentPurchases();
+
+  renderSummary(list);
+
+  const el =
+    $("#list");
+
+  if(!list.length){
+
+    el.innerHTML = `
+      <div class="empty">
+
+        この期間の購入履歴はありません。
+
+        <br>
+
+        <span class="muted">
+          過去の購入履歴は「全期間」で確認できます。
+        </span>
+
+      </div>
+    `;
+
+    return;
+
+  }
+
+  el.innerHTML =
+    list
+      .map(renderCard)
+      .join("");
+
+}
+
+
+/*
+  個別削除
+*/
+
+document.addEventListener(
+  "click",
+  e => {
+
+    const btn =
+      e.target.closest(
+        "[data-delete]"
+      );
+
+    if(!btn){
+      return;
+    }
+
+    const key =
+      btn.dataset.delete;
+
+    const ok =
+      confirm(
+        "この購入履歴を削除しますか？"
+      );
+
+    if(!ok){
+      return;
+    }
+
+    const list =
+      loadPurchased();
+
+    const next =
+      list.filter(
+        item => {
+
+          const itemKey =
+            item.key ||
+            `${getDate(item)}-${item.stadium_number}-${item.race_number}`;
+
+          return itemKey !== key;
+
+        }
+      );
+
+    savePurchased(next);
+
+    render();
+
+  }
+);
+
+
+/*
+  タブ
+*/
+
+document
+  .querySelectorAll(".tab")
+  .forEach(
+    tab => {
+
+      tab.addEventListener(
+        "click",
+        () => {
+
+          period =
+            tab.dataset.period;
+
+          document
+            .querySelectorAll(".tab")
+            .forEach(
+              x =>
+                x.classList.remove(
+                  "active"
+                )
+            );
+
+          tab.classList.add(
+            "active"
+          );
+
+          render();
+
+        }
+      );
+
+    }
+);
+
+
+/*
+  結果更新
+*/
+
+$("#refreshBtn")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const btn =
+        $("#refreshBtn");
+
+      btn.disabled = true;
+      btn.textContent =
+        "結果取得中…";
+
+      try{
+
+        await updateResults();
+
+      }catch(e){
+
+        console.error(e);
+
+      }
+
+      render();
+
+      btn.disabled = false;
+      btn.textContent =
+        "結果を更新";
+
+    }
+  );
+
+
+/*
+  全削除
+*/
+
+$("#clearBtn")
+  .addEventListener(
+    "click",
+    () => {
+
+      const list =
+        loadPurchased();
+
+      if(!list.length){
+        return;
+      }
+
+      const ok =
+        confirm(
+          `購入履歴 ${list.length}件をすべて削除しますか？`
+        );
+
+      if(!ok){
+        return;
+      }
+
+      localStorage.removeItem(
+        PURCHASED_KEY
+      );
+
+      render();
+
+    }
+  );
+
+
+/*
+  今日の日付
+*/
+
+$("#todayText").textContent =
+  `本日 ${jstDate()}`;
+
+
+/*
+  起動
+*/
+
+(async function(){
+
+  render();
+
+  /*
+    先に画面を出してから
+    過去結果を取得する。
+  */
+
+  await updateResults();
+
+  render();
+
+})();
+
+
+/*
+  3分ごとに結果更新
+*/
 
 setInterval(
-  load,
+  async () => {
+
+    await updateResults();
+
+    render();
+
+  },
   180000
 );
+
 </script>
 
 </body>
