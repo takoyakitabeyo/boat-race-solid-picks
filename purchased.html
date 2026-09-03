@@ -1,960 +1,991 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b1220">
-  <title>買ったレース</title>
-  <style>
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      background:#f3f5f8;
-      color:#172033;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
-    }
-    main{
-      width:min(760px,100%);
-      margin:auto;
-      padding:16px;
-    }
-    header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      margin-bottom:16px;
-    }
-    h1{
-      margin:0;
-      font-size:24px;
-    }
-    .sub{
-      color:#667085;
-      font-size:12px;
-      margin-top:4px;
-    }
-    button{
-      border:0;
-      border-radius:10px;
-      padding:10px 14px;
-      font-weight:700;
-      cursor:pointer;
-    }
-    .refresh{
-      background:#172033;
-      color:white;
-    }
-    .summary{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:8px;
-      margin-bottom:14px;
-    }
-    .summary-box{
-      background:white;
-      border-radius:14px;
-      padding:12px 8px;
-      text-align:center;
-      box-shadow:0 2px 10px rgba(0,0,0,.05);
-    }
-    .summary-label{
-      font-size:11px;
-      color:#667085;
-    }
-    .summary-value{
-      font-size:20px;
-      font-weight:800;
-      margin-top:4px;
-    }
-    .tabs{
-      display:flex;
-      background:white;
-      border-radius:12px;
-      padding:4px;
-      margin-bottom:14px;
-    }
-    .tab{
-      flex:1;
-      background:transparent;
-      color:#667085;
-      padding:9px 4px;
-    }
-    .tab.active{
-      background:#172033;
-      color:white;
-    }
-    .status{
-      background:white;
-      border-radius:12px;
-      padding:12px;
-      margin-bottom:12px;
-      font-size:13px;
-      color:#667085;
-    }
-    .card{
-      background:white;
-      border-radius:16px;
-      padding:15px;
-      margin-bottom:12px;
-      box-shadow:0 2px 12px rgba(0,0,0,.06);
-    }
-    .card-top{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .race-name{
-      font-size:18px;
-      font-weight:800;
-    }
-    .title{
-      margin-top:3px;
-      font-size:12px;
-      color:#667085;
-    }
-    .confidence{
-      white-space:nowrap;
-      font-weight:800;
-      font-size:13px;
-    }
-    .main{
-      margin-top:12px;
-      padding:12px;
-      background:#f7f8fa;
-      border-radius:12px;
-    }
-    .main-label{
-      font-size:11px;
-      color:#667085;
-    }
-    .main-name{
-      font-size:17px;
-      font-weight:800;
-      margin-top:3px;
-    }
-    .bets{
-      margin-top:12px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:7px;
-    }
-    .bet{
-      padding:7px 9px;
-      border-radius:8px;
-      background:#eef1f5;
-      font-weight:700;
-      font-size:13px;
-    }
-    .bet.hit{
-      background:#d9f7df;
-      color:#16733a;
-      box-shadow:inset 0 0 0 2px #31a354;
-    }
-    .result{
-      margin-top:12px;
-      padding:11px;
-      border-radius:10px;
-      background:#f7f8fa;
-      font-size:13px;
-    }
-    .result.hit{
-      background:#e7f8eb;
-      color:#16733a;
-    }
-    .result.miss{
-      background:#fff0f0;
-      color:#b42318;
-    }
-    .result.pending{
-      color:#667085;
-    }
-    .meta{
-      margin-top:10px;
-      font-size:11px;
-      color:#8a93a3;
-      display:flex;
-      justify-content:space-between;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .delete{
-      margin-top:10px;
-      background:#f1f3f5;
-      color:#667085;
-      font-size:11px;
-      padding:7px 10px;
-    }
-    .empty{
-      background:white;
-      border-radius:14px;
-      padding:30px 15px;
-      text-align:center;
-      color:#667085;
-    }
-    .danger{
-      margin-top:18px;
-      width:100%;
-      background:#fff0f0;
-      color:#b42318;
-    }
-    @media(max-width:500px){
-      .summary{
-        grid-template-columns:repeat(2,1fr);
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>購入済みレース</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#061222;
+  color:#eef5ff;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+}
+button{font:inherit}
+.app{
+  width:min(900px,100%);
+  margin:auto;
+  padding:28px 18px 60px;
+}
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:25px;
+}
+.eyebrow{
+  color:#7390aa;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:3px;
+  margin-bottom:10px;
+}
+h1{
+  margin:0;
+  font-size:32px;
+}
+.back{
+  border:1px solid #28577d;
+  background:#123452;
+  color:#eef5ff;
+  border-radius:18px;
+  padding:15px 20px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.tabs{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-bottom:20px;
+}
+.tab{
+  border:1px solid #1c4264;
+  background:#091c31;
+  color:#8195a9;
+  border-radius:18px;
+  padding:17px 8px;
+  font-weight:800;
+}
+.tab.active{
+  background:#153c5d;
+  color:white;
+  border-color:#2c719e;
+}
+.summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:28px;
+}
+.box{
+  background:#091c30;
+  border:1px solid #193b5b;
+  border-radius:20px;
+  min-height:120px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+.num{
+  font-size:34px;
+  font-weight:900;
+}
+.label{
+  margin-top:8px;
+  color:#748ca4;
+  font-size:13px;
+  font-weight:700;
+}
+.status{
+  color:#8398ad;
+  margin:10px 0 20px;
+  font-size:14px;
+}
+.card{
+  background:#0a1e33;
+  border:1px solid #214a6d;
+  border-radius:24px;
+  padding:26px;
+  margin-bottom:22px;
+  box-shadow:0 8px 25px rgba(0,0,0,.12);
+}
+.card.hit{
+  border-color:#2f9b69;
+}
+.card.miss{
+  border-color:#864848;
+}
+.cardhead{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  align-items:flex-start;
+}
+.race{
+  font-size:28px;
+  font-weight:900;
+}
+.title{
+  color:#8298ae;
+  margin-top:7px;
+  line-height:1.5;
+}
+.badge{
+  background:#173149;
+  color:#8ca1b5;
+  border-radius:12px;
+  padding:10px 13px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.badge.hit{
+  background:#164d38;
+  color:#6ce0a7;
+}
+.badge.miss{
+  background:#4c2424;
+  color:#ff9494;
+}
+.info{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin:25px 0;
+}
+.infoBox{
+  background:#061727;
+  border-radius:16px;
+  padding:17px;
+}
+.infoLabel{
+  color:#6f879e;
+  font-size:13px;
+  margin-bottom:9px;
+}
+.infoValue{
+  font-size:17px;
+  font-weight:800;
+}
+.line{
+  height:1px;
+  background:#173b59;
+  margin:20px 0;
+}
+.sectionTitle{
+  color:#8298ae;
+  font-size:14px;
+  font-weight:800;
+  margin-bottom:12px;
+}
+.bets{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.bet{
+  background:#153e60;
+  border:1px solid #28678f;
+  border-radius:13px;
+  padding:12px 17px;
+  font-size:18px;
+  font-weight:900;
+}
+.bet.hit{
+  background:#155d40;
+  border-color:#3fbd7c;
+  color:#8affc2;
+}
+.result{
+  margin-top:18px;
+  background:#071a2c;
+  border-radius:15px;
+  padding:15px 17px;
+  font-weight:800;
+}
+.result.hit{
+  background:#103b2a;
+  color:#75e5ad;
+}
+.result.miss{
+  background:#321919;
+  color:#ff9999;
+}
+.result.wait{
+  color:#9aabba;
+}
+.actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:20px;
+}
+.delete{
+  background:transparent;
+  border:1px solid #713c3c;
+  color:#c97979;
+  border-radius:12px;
+  padding:10px 14px;
+  font-weight:800;
+}
+.empty{
+  text-align:center;
+  padding:60px 20px;
+  color:#8095aa;
+}
+.bottom{
+  margin-top:30px;
+  display:flex;
+  justify-content:flex-end;
+}
+.clear{
+  border:1px solid #713c3c;
+  background:#241417;
+  color:#d98585;
+  border-radius:14px;
+  padding:12px 16px;
+  font-weight:800;
+}
+.error{
+  background:#32191b;
+  border:1px solid #713c3c;
+  color:#ffaaaa;
+  padding:16px;
+  border-radius:15px;
+  margin-bottom:20px;
+  display:none;
+}
+@media(max-width:600px){
+  .app{padding:24px 14px 50px}
+  h1{font-size:29px}
+  .back{padding:13px 15px}
+  .summary{grid-template-columns:repeat(2,1fr)}
+  .box{min-height:105px}
+  .card{padding:22px 18px}
+  .race{font-size:25px}
+  .info{gap:10px}
+  .infoBox{padding:14px}
+  .infoValue{font-size:15px}
+}
+</style>
 </head>
+
 <body>
-<main>
-  <header>
-    <div>
-      <h1>買ったレース</h1>
-      <div class="sub">購入履歴・結果・的中率</div>
-    </div>
-    <button id="refresh" class="refresh">更新</button>
-  </header>
-  <section class="summary">
-    <div class="summary-box">
-      <div class="summary-label">購入</div>
-      <div id="total" class="summary-value">0</div>
-    </div>
-    <div class="summary-box">
-      <div class="summary-label">結果確定</div>
-      <div id="settled" class="summary-value">0</div>
-    </div>
-    <div class="summary-box">
-      <div class="summary-label">的中</div>
-      <div id="hits" class="summary-value">0</div>
-    </div>
-    <div class="summary-box">
-      <div class="summary-label">的中率</div>
-      <div id="rate" class="summary-value">--%</div>
-    </div>
-  </section>
-  <section class="tabs">
-    <button class="tab active" data-period="all">全期間</button>
-    <button class="tab" data-period="month">今月</button>
-    <button class="tab" data-period="today">今日</button>
-  </section>
-  <section id="status" class="status">
-    結果を確認しています…
-  </section>
-  <section id="list"></section>
-  <button id="clearAll" class="danger">
-    購入履歴をすべて削除
-  </button>
+<main class="app">
+
+<header class="top">
+  <div>
+    <div class="eyebrow">BOAT RACE / PURCHASED</div>
+    <h1>購入済みレース</h1>
+  </div>
+  <button class="back" onclick="location.href='index.html'">← 予想一覧</button>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-period="all">全期間</button>
+  <button class="tab" data-period="month">今月</button>
+  <button class="tab" data-period="today">今日</button>
+</div>
+
+<section class="summary">
+  <div class="box">
+    <div class="num" id="total">0</div>
+    <div class="label">購入</div>
+  </div>
+  <div class="box">
+    <div class="num" id="settled">0</div>
+    <div class="label">結果確定</div>
+  </div>
+  <div class="box">
+    <div class="num" id="hits">0</div>
+    <div class="label">的中</div>
+  </div>
+  <div class="box">
+    <div class="num" id="rate">-</div>
+    <div class="label">的中率</div>
+  </div>
+</section>
+
+<div id="status" class="status">購入履歴を読み込んでいます…</div>
+<div id="error" class="error"></div>
+<section id="list"></section>
+
+<div class="bottom">
+  <button id="clear" class="clear">購入履歴を全削除</button>
+</div>
+
 </main>
+
 <script>
-const PURCHASED_KEY = "cyber-hacchan-purchased-v2";
-const RESULTS_KEY = "boatResults";
-const API_BASE =
-  "https://boatraceopenapi.github.io/api/v1";
-const STADIUMS = {
-  1:"桐生",
-  2:"戸田",
-  3:"江戸川",
-  4:"平和島",
-  5:"多摩川",
-  6:"浜名湖",
-  7:"蒲郡",
-  8:"常滑",
-  9:"津",
-  10:"三国",
-  11:"びわこ",
-  12:"住之江",
-  13:"尼崎",
-  14:"鳴門",
-  15:"丸亀",
-  16:"児島",
-  17:"宮島",
-  18:"徳山",
-  19:"下関",
-  20:"若松",
-  21:"芦屋",
-  22:"福岡",
-  23:"唐津",
-  24:"大村"
+const PURCHASED_KEY="cyber-hacchan-purchased-v2";
+const RESULTS_KEY="boatResults";
+const API_BASE="https://boatraceopenapi.github.io/api/v1";
+
+const STADIUMS={
+  1:"桐生",2:"戸田",3:"江戸川",4:"平和島",
+  5:"多摩川",6:"浜名湖",7:"蒲郡",8:"常滑",
+  9:"津",10:"三国",11:"びわこ",12:"住之江",
+  13:"尼崎",14:"鳴門",15:"丸亀",16:"児島",
+  17:"宮島",18:"徳山",19:"下関",20:"若松",
+  21:"芦屋",22:"福岡",23:"唐津",24:"大村"
 };
-let period = "all";
-let purchases = [];
-let results = {};
-const $ = s => document.querySelector(s);
+
+let period="all";
+let purchases=[];
+let results={};
+
+const $=id=>document.getElementById(id);
+
 function esc(v){
-  return String(v ?? "")
+  return String(v??"")
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
+    .replaceAll("'","&#039;");
 }
+
 function loadPurchases(){
   try{
-    const raw = JSON.parse(
-      localStorage.getItem(PURCHASED_KEY) || "[]"
-    );
-    if(Array.isArray(raw)){
-      return raw;
+    const raw=JSON.parse(localStorage.getItem(PURCHASED_KEY)||"[]");
+
+    if(Array.isArray(raw)) return raw;
+
+    if(Array.isArray(raw.items)) return raw.items;
+
+    if(raw && typeof raw==="object"){
+      return Object.values(raw);
     }
-    if(raw && Array.isArray(raw.items)){
-      return raw.items;
-    }
+
     return [];
-  }catch{
+  }catch(e){
+    console.error("購入履歴読み込み失敗",e);
     return [];
   }
 }
-function loadStoredResults(){
+
+function loadResults(){
   try{
-    const raw = JSON.parse(
-      localStorage.getItem(RESULTS_KEY) || "{}"
-    );
-    return raw && typeof raw === "object" ? raw : {};
+    const raw=JSON.parse(localStorage.getItem(RESULTS_KEY)||"{}");
+    return raw && typeof raw==="object" ? raw : {};
   }catch{
     return {};
   }
 }
-function saveStoredResults(){
+
+function saveResults(){
   try{
-    localStorage.setItem(
-      RESULTS_KEY,
-      JSON.stringify(results)
-    );
-  }catch{}
+    localStorage.setItem(RESULTS_KEY,JSON.stringify(results));
+  }catch(e){}
 }
-function normalizeDate(v){
-  if(!v)return "";
-  const s = String(v);
-  const m = s.match(/(20\d{2})[-\/]?(\d{2})[-\/]?(\d{2})/);
-  if(!m)return "";
-  return `${m[1]}-${m[2]}-${m[3]}`;
+
+function cleanDate(v){
+  if(!v) return "";
+
+  const s=String(v);
+
+  const m=s.match(/(20\d{2})[-\/](\d{1,2})[-\/](\d{1,2})/);
+
+  if(!m) return "";
+
+  return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
 }
-function normalizeNumber(v){
-  if(v === null || v === undefined || v === "")return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-function raceKey(date,stadiumNo,raceNo){
-  const d = normalizeDate(date);
-  const s = normalizeNumber(stadiumNo);
-  const r = normalizeNumber(raceNo);
-  if(!d || s === null || r === null)return "";
-  return `${d}-${s}-${r}`;
-}
-function normalizeBet(v){
-  if(v === null || v === undefined)return "";
-  return String(v)
-    .trim()
-    .replace(/[＝=]/g,"-")
-    .replace(/[－–—]/g,"-")
-    .replace(/\s+/g,"")
-    .replace(/[^1-6-]/g,"");
-}
-function normalizeBets(v){
-  if(Array.isArray(v)){
-    return v
-      .flatMap(x => normalizeBets(x))
-      .filter(Boolean);
-  }
-  if(typeof v === "string"){
-    return v
-      .split(/[,\n、\/]+/)
-      .map(normalizeBet)
-      .filter(Boolean);
-  }
-  return [];
-}
-function purchaseBets(item){
-  return normalizeBets(
-    item.bets ??
-    item.bet ??
-    item.combinations ??
-    item.combination ??
-    item.buyBets ??
-    []
+
+function getDate(item){
+  return cleanDate(
+    item.date ||
+    item.raceDate ||
+    item.race_date ||
+    item.eventDate ||
+    item.event_date ||
+    item.purchaseDate ||
+    item.purchasedDate
   );
 }
-function purchaseDate(item){
-  return normalizeDate(
-    item.date ??
-    item.raceDate ??
-    item.racedate ??
-    item.開催日
-  );
-}
-function stadiumNo(item){
-  return normalizeNumber(
-    item.stadiumNo ??
+
+function getStadium(item){
+  return Number(
     item.stadium_number ??
-    item.stadium ??
-    item.venueNo
+    item.stadiumNumber ??
+    item.stadium_id ??
+    item.stadiumId ??
+    item.stadium
   );
 }
-function raceNo(item){
-  return normalizeNumber(
-    item.raceNo ??
+
+function getRaceNo(item){
+  return Number(
     item.race_number ??
+    item.raceNumber ??
+    item.race_no ??
+    item.raceNo ??
     item.race
   );
 }
-function purchaseKey(item){
-  return raceKey(
-    purchaseDate(item),
-    stadiumNo(item),
-    raceNo(item)
-  );
+
+function getKey(item){
+  const date=getDate(item);
+  const stadium=getStadium(item);
+  const race=getRaceNo(item);
+
+  if(!date || !stadium || !race) return "";
+
+  return `${date}-${stadium}-${race}`;
 }
-function getTodayJST(){
-  const s = new Intl.DateTimeFormat(
-    "en-CA",
-    {
-      timeZone:"Asia/Tokyo",
-      year:"numeric",
-      month:"2-digit",
-      day:"2-digit"
-    }
-  ).format(new Date());
-  return s;
+
+function normalizeBet(v){
+  if(v==null) return "";
+
+  if(Array.isArray(v)){
+    return v.map(x=>String(x)).join("-");
+  }
+
+  const s=String(v);
+
+  const nums=s.match(/[1-6]/g);
+
+  if(nums && nums.length>=3){
+    return nums.slice(0,3).join("-");
+  }
+
+  return s.replace(/[^\d]/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
 }
-function getMonth(date){
-  return date ? date.slice(0,7) : "";
-}
-function formatDate(date){
-  if(!date)return "-";
-  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(!m)return date;
-  return `${m[1]}/${m[2]}/${m[3]}`;
-}
-function extractResultFromRace(r){
-  if(!r)return null;
-  const result = r.result || r;
-  let combination = "";
-  const payouts =
-    result.payouts ||
-    r.payouts ||
-    {};
-  const trifecta =
-    payouts.trifecta ||
-    payouts["3t"] ||
+
+function getBets(item){
+  let bets=
+    item.bets ??
+    item.buyBets ??
+    item.combinations ??
+    item.combos ??
+    item.betList ??
+    item.buy_list ??
     [];
-  if(Array.isArray(trifecta) && trifecta.length){
-    combination =
-      trifecta[0]?.combination || "";
+
+  if(typeof bets==="string"){
+    bets=bets.split(/[,\s\/]+/);
   }
-  combination = normalizeBet(combination);
-  let amount = null;
+
+  if(!Array.isArray(bets)) bets=[bets];
+
+  return bets
+    .map(normalizeBet)
+    .filter(Boolean);
+}
+
+function normalizeCombination(v){
+  return normalizeBet(v).replace(/-/g,"");
+}
+
+function extractResult(race){
+  if(!race) return null;
+
+  // ① 払戻データ
+  const trifecta=
+    race.result?.payouts?.trifecta ||
+    race.payouts?.trifecta ||
+    [];
+
   if(Array.isArray(trifecta) && trifecta.length){
-    amount =
-      normalizeNumber(trifecta[0]?.amount);
+    const first=trifecta[0];
+
+    const combination=
+      first?.combination ??
+      first?.combo ??
+      first?.numbers;
+
+    if(combination){
+      return {
+        combination:normalizeBet(combination),
+        payout:first?.amount ?? first?.payout ?? null
+      };
+    }
   }
-  /*
-   * 払戻データが取れなくても、
-   * racers の place_number から実着順を作る。
-   */
-  if(!combination){
-    const racers =
-      result.racers ||
-      r.result?.racers ||
-      {};
-    const arr = Object.values(racers)
-      .map(x => ({
-        entry:Number(x.entry_number),
-        place:Number(x.place_number)
+
+  // ② racerのplace_numberから順位を作る
+  const racers=race.result?.racers;
+
+  if(racers && typeof racers==="object"){
+    const arr=Object.entries(racers)
+      .map(([entry,data])=>({
+        entry:Number(entry),
+        place:Number(
+          data?.place_number ??
+          data?.place ??
+          data?.rank
+        )
       }))
-      .filter(x =>
-        Number.isFinite(x.entry) &&
-        Number.isFinite(x.place) &&
-        x.place >= 1 &&
-        x.place <= 3
-      )
+      .filter(x=>Number.isFinite(x.entry)&&Number.isFinite(x.place));
+
+    const top3=arr
+      .filter(x=>x.place>=1&&x.place<=3)
       .sort((a,b)=>a.place-b.place);
-    if(arr.length >= 3){
-      combination =
-        `${arr[0].entry}-${arr[1].entry}-${arr[2].entry}`;
+
+    if(top3.length===3){
+      return {
+        combination:top3.map(x=>x.entry).join("-"),
+        payout:null
+      };
     }
   }
-  if(!combination)return null;
-  return {
-    combination,
-    amount,
-    date:normalizeDate(
-      result.date ||
-      r.date
-    )
-  };
+
+  return null;
 }
-function saveRaceResult(r){
-  const date =
-    normalizeDate(
-      r.date ||
-      r.result?.date
-    );
-  const stadium =
-    normalizeNumber(
-      r.stadium_number ||
-      r.result?.stadium_number
-    );
-  const race =
-    normalizeNumber(
-      r.race_number ||
-      r.result?.race_number
-    );
-  const data =
-    extractResultFromRace(r);
-  if(!date || stadium === null || race === null || !data){
-    return;
-  }
-  const key =
-    raceKey(date,stadium,race);
-  results[key] = {
-    combination:data.combination,
-    amount:data.amount,
-    updatedAt:new Date().toISOString()
-  };
-}
+
 async function fetchJson(url){
-  const controller =
-    new AbortController();
-  const timer =
-    setTimeout(
-      ()=>controller.abort(),
-      15000
-    );
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),15000);
+
   try{
-    const res =
-      await fetch(
-        url,
-        {
-          cache:"no-store",
-          signal:controller.signal
-        }
-      );
+    const res=await fetch(url,{
+      cache:"no-store",
+      signal:controller.signal
+    });
+
     if(!res.ok){
-      throw new Error(
-        `HTTP ${res.status}`
-      );
+      throw new Error(`HTTP ${res.status}`);
     }
+
     return await res.json();
   }finally{
     clearTimeout(timer);
   }
 }
-async function fetchDateResults(date){
-  if(!date)return;
-  /*
-   * まず現在のAPI v1を使用。
-   * 指定日付のデータを直接取得する。
-   */
-  const y =
-    date.slice(0,4);
-  const compact =
-    date.replaceAll("-","");
-  const url =
-    `${API_BASE}/${y}/${compact}.json`;
-  try{
-    const data =
-      await fetchJson(url);
-    const stadiums =
-      data.programs?.stadiums || {};
-    for(const stadium of Object.values(stadiums)){
-      for(const r of Object.values(
-        stadium.races || {}
-      )){
-        if(
-          r.result?.racers ||
-          r.result?.payouts
-        ){
-          saveRaceResult(r);
+
+async function fetchRaceResult(item){
+  const date=getDate(item);
+  const stadium=getStadium(item);
+  const raceNo=getRaceNo(item);
+
+  if(!date || !stadium || !raceNo){
+    return null;
+  }
+
+  const y=date.slice(0,4);
+  const compact=date.replaceAll("-","");
+
+  const url=`${API_BASE}/${y}/${compact}.json`;
+
+  console.log("結果取得:",url);
+
+  const data=await fetchJson(url);
+
+  const stadiums=data?.programs?.stadiums || {};
+
+  const stadiumData=
+    stadiums[String(stadium)] ||
+    stadiums[stadium];
+
+  if(!stadiumData) return null;
+
+  const races=stadiumData.races || {};
+
+  const race=
+    races[String(raceNo)] ||
+    races[raceNo];
+
+  if(!race) return null;
+
+  const result=extractResult(race);
+
+  if(!result) return null;
+
+  const key=`${date}-${stadium}-${raceNo}`;
+
+  results[key]={
+    combination:result.combination,
+    payout:result.payout,
+    at:new Date().toISOString()
+  };
+
+  return results[key];
+}
+
+async function updateResults(){
+  const unique=new Map();
+
+  for(const item of purchases){
+    const key=getKey(item);
+
+    if(!key) continue;
+
+    if(!unique.has(key)){
+      unique.set(key,item);
+    }
+  }
+
+  const list=[...unique.values()];
+
+  let success=0;
+  let failed=0;
+
+  $("status").textContent=`結果を取得中… 0 / ${list.length}`;
+
+  for(let i=0;i<list.length;i++){
+    const item=list[i];
+    const key=getKey(item);
+
+    try{
+      // 既に結果があっても、古いデータなら再取得する
+      const old=results[key];
+
+      if(old?.combination){
+        success++;
+      }else{
+        const result=await fetchRaceResult(item);
+
+        if(result?.combination){
+          success++;
+        }else{
+          failed++;
         }
       }
+    }catch(e){
+      console.error("結果取得失敗",key,e);
+      failed++;
     }
+
+    $("status").textContent=
+      `結果を取得中… ${i+1} / ${list.length}`;
+
+    // APIへの連続アクセスを少し間隔を空ける
+    await new Promise(r=>setTimeout(r,250));
+  }
+
+  saveResults();
+
+  return {success,failed,total:list.length};
+}
+
+function isToday(date){
+  const now=new Date();
+
+  const today=
+    `${now.getFullYear()}-`+
+    `${String(now.getMonth()+1).padStart(2,"0")}-`+
+    `${String(now.getDate()).padStart(2,"0")}`;
+
+  return date===today;
+}
+
+function isThisMonth(date){
+  const now=new Date();
+
+  const month=
+    `${now.getFullYear()}-`+
+    `${String(now.getMonth()+1).padStart(2,"0")}`;
+
+  return date.startsWith(month);
+}
+
+function filteredPurchases(){
+  return purchases.filter(item=>{
+    const date=getDate(item);
+
+    if(period==="today") return isToday(date);
+
+    if(period==="month") return isThisMonth(date);
+
     return true;
-  }catch(e){
-    console.warn(
-      "結果取得失敗:",
-      date,
-      e
-    );
-    return false;
-  }
+  });
 }
-async function fetchResultsForPurchases(){
-  const dates =
-    [...new Set(
-      purchases
-        .map(purchaseDate)
-        .filter(Boolean)
-    )];
-  const missingDates =
-    dates.filter(date => {
-      return !purchases.some(item => {
-        const key =
-          purchaseKey(item);
-        return (
-          key &&
-          results[key]
-        );
-      });
-    });
-  /*
-   * 日付単位でAPIを取得。
-   * 同じ日のレースを何度も取得しない。
-   */
-  for(const date of dates){
-    const alreadyHasDate =
-      Object.keys(results).some(
-        key => key.startsWith(date + "-")
-      );
-    if(alreadyHasDate){
-      continue;
-    }
-    await fetchDateResults(date);
-  }
-  saveStoredResults();
-}
-function buildActualResult(item){
-  const key =
-    purchaseKey(item);
-  if(results[key]){
-    return results[key];
-  }
-  /*
-   * 古い保存形式への対応
-   */
-  const oldKey =
-    `${stadiumNo(item)}-${raceNo(item)}`;
-  if(results[oldKey]){
-    return results[oldKey];
-  }
-  return null;
-}
+
 function evaluate(item){
-  const bets =
-    purchaseBets(item);
-  const actual =
-    buildActualResult(item);
-  if(!actual){
+  const key=getKey(item);
+  const stored=results[key];
+
+  if(!stored?.combination){
     return {
       settled:false,
       hit:false,
-      actual:null,
-      bets
+      result:"",
+      payout:null
     };
   }
-  const hit =
-    bets.includes(
-      normalizeBet(actual.combination)
-    );
+
+  const actual=normalizeCombination(stored.combination);
+
+  const bets=getBets(item);
+
+  const hit=bets.some(b=>{
+    return normalizeCombination(b)===actual;
+  });
+
   return {
     settled:true,
     hit,
-    actual,
-    bets
+    result:stored.combination,
+    payout:stored.payout
   };
 }
-function filteredPurchases(){
-  const today =
-    getTodayJST();
-  const month =
-    today.slice(0,7);
-  if(period === "today"){
-    return purchases.filter(
-      p => purchaseDate(p) === today
-    );
-  }
-  if(period === "month"){
-    return purchases.filter(
-      p => getMonth(purchaseDate(p)) === month
-    );
-  }
-  return purchases;
-}
-function renderSummary(list){
-  const evaluated =
-    list.map(evaluate);
-  const settled =
-    evaluated.filter(
-      x => x.settled
-    );
-  const hits =
-    settled.filter(
-      x => x.hit
-    );
-  $("#total").textContent =
-    list.length;
-  $("#settled").textContent =
-    settled.length;
-  $("#hits").textContent =
-    hits.length;
-  $("#rate").textContent =
-    settled.length
-      ? `${((hits.length / settled.length) * 100).toFixed(1)}%`
-      : "--%";
-}
+
 function renderCard(item,index){
-  const date =
-    purchaseDate(item);
-  const stadium =
-    stadiumNo(item);
-  const race =
-    raceNo(item);
-  const key =
-    purchaseKey(item);
-  const evaluation =
-    evaluate(item);
-  const bets =
-    evaluation.bets;
-  const confidence =
+  const stadium=getStadium(item);
+  const raceNo=getRaceNo(item);
+  const date=getDate(item);
+  const bets=getBets(item);
+  const ev=evaluate(item);
+
+  const stadiumName=
+    item.stadiumName ||
+    item.stadium_name ||
+    STADIUMS[stadium] ||
+    `場${stadium}`;
+
+  const title=
+    item.title ||
+    item.raceTitle ||
+    item.race_title ||
+    "";
+
+  const grade=
+    item.grade ||
+    item.gradeName ||
+    "";
+
+  const mainNo=
+    item.mainNo ??
+    item.main_number ??
+    item.mainBoat ??
+    item.main_boat ??
+    1;
+
+  const mainName=
+    item.mainName ||
+    item.main_name ||
+    item.mainBoatName ||
+    "";
+
+  const confidence=
     item.confidence ??
     item.score ??
     item.s ??
-    "";
-  const mainNo =
-    item.mainNo ??
-    item.main_number ??
-    item.oneNo ??
-    item.mainBoat ??
-    "";
-  const mainName =
-    item.mainName ??
-    item.main_name ??
-    item.oneName ??
-    "";
-  const title =
-    item.title ??
-    item.raceTitle ??
-    "";
-  const stadiumName =
-    STADIUMS[stadium] ||
-    item.stadiumName ||
-    `場${stadium ?? "-"}`;
-  let resultHtml = "";
-  if(!evaluation.settled){
-    resultHtml = `
-      <div class="result pending">
-        結果待ち
-      </div>
-    `;
-  }else if(evaluation.hit){
-    resultHtml = `
-      <div class="result hit">
-        <b>的中</b>
-        ・実着 ${esc(evaluation.actual.combination)}
-        ${
-          evaluation.actual.amount !== null
-            ? `・払戻 ${evaluation.actual.amount.toLocaleString()}円`
-            : ""
-        }
-      </div>
-    `;
+    "-";
+
+  let cls="card";
+  let badge="結果待ち";
+  let badgeCls="";
+
+  if(ev.settled){
+    if(ev.hit){
+      cls+=" hit";
+      badge="的中";
+      badgeCls="hit";
+    }else{
+      cls+=" miss";
+      badge="ハズレ";
+      badgeCls="miss";
+    }
+  }
+
+  const betsHtml=bets.length
+    ? bets.map(b=>{
+        const hit=
+          ev.settled &&
+          normalizeCombination(b)===normalizeCombination(ev.result);
+
+        return `<span class="bet ${hit?"hit":""}">${esc(b)}</span>`;
+      }).join("")
+    : `<span class="bet">買い目なし</span>`;
+
+  let resultHtml="";
+
+  if(!ev.settled){
+    resultHtml=
+      `<div class="result wait">まだ結果が確定していません</div>`;
+  }else if(ev.hit){
+    resultHtml=
+      `<div class="result hit">
+        結果：${esc(ev.result)}　
+        <strong>的中</strong>
+        ${ev.payout!=null?`　払戻 ${Number(ev.payout).toLocaleString()}円`:""}
+      </div>`;
   }else{
-    resultHtml = `
-      <div class="result miss">
-        <b>ハズレ</b>
-        ・実着 ${esc(evaluation.actual.combination)}
-        ${
-          evaluation.actual.amount !== null
-            ? `・払戻 ${evaluation.actual.amount.toLocaleString()}円`
-            : ""
-        }
-      </div>
-    `;
+    resultHtml=
+      `<div class="result miss">
+        結果：${esc(ev.result)}
+        ${ev.payout!=null?`　払戻 ${Number(ev.payout).toLocaleString()}円`:""}
+        　<strong>ハズレ</strong>
+      </div>`;
   }
-  const betsHtml =
-    bets.length
-      ? bets.map(bet => {
-          const hit =
-            evaluation.settled &&
-            normalizeBet(
-              evaluation.actual?.combination
-            ) === normalizeBet(bet);
-          return `
-            <span class="bet ${hit ? "hit" : ""}">
-              ${esc(bet)}
-            </span>
-          `;
-        }).join("")
-      : `<span class="bet">買い目なし</span>`;
+
   return `
-    <article class="card">
-      <div class="card-top">
-        <div>
-          <div class="race-name">
-            ${esc(stadiumName)} ${esc(race ?? "-")}R
-          </div>
-          <div class="title">
-            ${esc(title)}
-          </div>
+  <article class="${cls}">
+    <div class="cardhead">
+      <div>
+        <div class="race">
+          ${esc(stadiumName)} ${esc(raceNo)}R
         </div>
-        ${
-          confidence !== ""
-            ? `<div class="confidence">
-                 信頼度 ${esc(confidence)}
-               </div>`
-            : ""
-        }
+
+        <div class="title">
+          ${grade?esc(grade)+" / ":""}${esc(title)}
+        </div>
       </div>
-      ${
-        mainNo || mainName
-          ? `
-            <div class="main">
-              <div class="main-label">
-                1着本命
-              </div>
-              <div class="main-name">
-                ${mainNo ? `①${esc(mainNo)}` : ""}
-                ${mainName ? ` ${esc(mainName)}` : ""}
-              </div>
-            </div>
-          `
-          : ""
-      }
-      <div class="bets">
-        ${betsHtml}
+
+      <div class="badge ${badgeCls}">
+        ${badge}
       </div>
-      ${resultHtml}
-      <div class="meta">
-        <span>開催日 ${esc(formatDate(date))}</span>
-        <span>レース ${esc(key)}</span>
+    </div>
+
+    <div class="info">
+      <div class="infoBox">
+        <div class="infoLabel">本命</div>
+        <div class="infoValue">
+          ${esc(mainNo)}号艇 ${esc(mainName)}
+        </div>
       </div>
-      <button
-        class="delete"
-        onclick="deletePurchase(${index})">
-        この購入を削除
+
+      <div class="infoBox">
+        <div class="infoLabel">自信度</div>
+        <div class="infoValue">${esc(confidence)}</div>
+      </div>
+
+      <div class="infoBox">
+        <div class="infoLabel">購入日</div>
+        <div class="infoValue">${esc(date||"-")}</div>
+      </div>
+
+      <div class="infoBox">
+        <div class="infoLabel">買い目点数</div>
+        <div class="infoValue">${bets.length}点</div>
+      </div>
+    </div>
+
+    <div class="line"></div>
+
+    <div class="sectionTitle">推奨買い目</div>
+
+    <div class="bets">
+      ${betsHtml}
+    </div>
+
+    ${resultHtml}
+
+    <div class="actions">
+      <button class="delete" onclick="deletePurchase(${index})">
+        この履歴を削除
       </button>
-    </article>
-  `;
+    </div>
+  </article>`;
 }
+
 function render(){
-  const list =
-    filteredPurchases();
-  renderSummary(list);
+  const list=filteredPurchases();
+
+  let settled=0;
+  let hits=0;
+
+  list.forEach(item=>{
+    const ev=evaluate(item);
+
+    if(ev.settled){
+      settled++;
+
+      if(ev.hit){
+        hits++;
+      }
+    }
+  });
+
+  $("total").textContent=list.length;
+  $("settled").textContent=settled;
+  $("hits").textContent=hits;
+  $("rate").textContent=
+    settled ? `${Math.round(hits/settled*100)}%` : "-";
+
   if(!list.length){
-    $("#list").innerHTML = `
-      <div class="empty">
-        購入履歴はありません。
-      </div>
-    `;
-    $("#status").textContent =
-      "購入履歴 0件";
+    $("list").innerHTML=
+      `<div class="empty">購入済みのレースはありません。</div>`;
     return;
   }
-  const evaluated =
-    list.map(evaluate);
-  const settled =
-    evaluated.filter(x=>x.settled).length;
-  $("#status").textContent =
-    `購入 ${list.length}件 / 結果確定 ${settled}件`;
-  /*
-   * 新しい購入順
-   */
-  const indexed =
-    list
-      .map((item,i)=>({item,i}))
-      .sort((a,b)=>{
-        const da =
-          new Date(
-            a.item.purchasedAt ||
-            a.item.createdAt ||
-            a.item.savedAt ||
-            0
-          );
-        const db =
-          new Date(
-            b.item.purchasedAt ||
-            b.item.createdAt ||
-            b.item.savedAt ||
-            0
-          );
-        return db-da;
-      });
-  $("#list").innerHTML =
-    indexed
-      .map(x =>
-        renderCard(
-          x.item,
-          purchases.indexOf(x.item)
-        )
-      )
-      .join("");
+
+  // 新しい購入順
+  const sorted=[...list].sort((a,b)=>{
+    const da=new Date(a.purchasedAt||a.createdAt||0);
+    const db=new Date(b.purchasedAt||b.createdAt||0);
+    return db-da;
+  });
+
+  $("list").innerHTML=sorted.map((item)=>{
+    const originalIndex=purchases.indexOf(item);
+    return renderCard(item,originalIndex);
+  }).join("");
 }
-function deletePurchase(index){
-  if(!confirm("この購入履歴を削除しますか？")){
+
+async function load(){
+  purchases=loadPurchases();
+  results=loadResults();
+
+  render();
+
+  if(!purchases.length){
+    $("status").textContent="購入履歴はありません";
     return;
   }
+
+  $("error").style.display="none";
+
+  try{
+    const info=await updateResults();
+
+    render();
+
+    $("status").textContent=
+      `結果確認完了：${info.success}件取得`;
+
+    if(info.failed>0){
+      $("status").textContent+=
+        ` / ${info.failed}件は結果未取得`;
+    }
+  }catch(e){
+    console.error(e);
+
+    $("error").textContent=
+      "結果データの取得に失敗しました。時間を置いて再読み込みしてください。";
+
+    $("error").style.display="block";
+
+    $("status").textContent="結果取得に失敗しました";
+
+    render();
+  }
+}
+
+function deletePurchase(index){
+  if(!confirm("この購入履歴を削除しますか？"))return;
+
   purchases.splice(index,1);
+
   localStorage.setItem(
     PURCHASED_KEY,
     JSON.stringify(purchases)
   );
+
   render();
 }
-async function refresh(){
-  $("#status").textContent =
-    "過去の結果を取得しています…";
-  purchases =
-    loadPurchases();
-  results =
-    loadStoredResults();
-  /*
-   * 購入履歴に存在する日付を全部確認。
-   * 昨日・一昨日などもここで取得する。
-   */
-  await fetchResultsForPurchases();
+
+$("clear").addEventListener("click",()=>{
+  if(!purchases.length)return;
+
+  if(!confirm("購入履歴をすべて削除しますか？"))return;
+
+  localStorage.removeItem(PURCHASED_KEY);
+
+  purchases=[];
   render();
-  $("#status").textContent =
-    `購入 ${filteredPurchases().length}件 / 結果確認済み`;
-}
-document
-  .querySelectorAll(".tab")
-  .forEach(btn=>{
-    btn.addEventListener(
-      "click",
-      ()=>{
-        document
-          .querySelectorAll(".tab")
-          .forEach(x =>
-            x.classList.remove("active")
-          );
-        btn.classList.add("active");
-        period =
-          btn.dataset.period;
-        render();
-      }
-    );
+
+  $("status").textContent="購入履歴を削除しました";
+});
+
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab")
+      .forEach(x=>x.classList.remove("active"));
+
+    btn.classList.add("active");
+
+    period=btn.dataset.period;
+
+    render();
   });
-$("#refresh")
-  .addEventListener(
-    "click",
-    refresh
-  );
-$("#clearAll")
-  .addEventListener(
-    "click",
-    ()=>{
-      if(!confirm(
-        "購入履歴をすべて削除しますか？"
-      )){
-        return;
-      }
-      localStorage.removeItem(
-        PURCHASED_KEY
-      );
-      purchases = [];
-      render();
-    }
-  );
-/*
- * 初回読み込み
- */
-refresh();
-/*
- * 3分ごとに結果確認
- */
-setInterval(
-  refresh,
-  180000
-);
+});
+
+load();
+
+setInterval(load,180000);
 </script>
+
 </body>
 </html>
