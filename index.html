@@ -78,7 +78,8 @@
     }
 
     .refresh,
-    .purchase-link {
+    .purchase-link,
+    .vote-link {
       padding: 9px 12px;
       border: 1px solid #27435f;
       border-radius: 10px;
@@ -89,6 +90,18 @@
       cursor: pointer;
       text-decoration: none;
       white-space: nowrap;
+    }
+
+    .vote-link {
+      border-color: #2b705f;
+      background: #124236;
+      color: #b9f0dc;
+    }
+
+    .vote-link:active,
+    .purchase-link:active,
+    .refresh:active {
+      transform: scale(0.97);
     }
 
     .status-card {
@@ -567,7 +580,8 @@
       }
 
       .refresh,
-      .purchase-link {
+      .purchase-link,
+      .vote-link {
         padding: 8px 9px;
         font-size: 10px;
       }
@@ -593,8 +607,22 @@
       </div>
 
       <div class="header-buttons">
+
         <button class="refresh" id="refreshBtn">更新</button>
-        <a class="purchase-link" href="purchased.html">購入済み</a>
+
+        <a
+          class="vote-link"
+          href="https://spweb.brtb.jp/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          舟券を買う
+        </a>
+
+        <a class="purchase-link" href="purchased.html">
+          購入済み
+        </a>
+
       </div>
     </header>
 
