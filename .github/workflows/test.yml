@@ -1,0 +1,23 @@
+name: サイバーはっちゃん 強化版テスト
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: Pythonをセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 動作確認
+        run: |
+          python --version
+          echo "サイバーはっちゃん強化版の準備完了"
+          echo "GitHub Actionsは正常に動作しています"
