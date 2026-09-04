@@ -1,81 +1,262 @@
-name: サイバーはっちゃん 過去データ取得テスト
+name: サイバーはっちゃん 過去1年データ取得
 
 on:
   workflow_dispatch:
 
 jobs:
-  historical-data-test:
+  historical-data:
     runs-on: ubuntu-latest
 
     steps:
       - name: リポジトリを取得
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Pythonをセットアップ
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - name: 過去データ取得
+      - name: 過去1年分のデータを取得
         run: |
           python - <<'PY'
           import json
           import urllib.request
+          import time
+          from datetime import date, timedelta
+          from pathlib import Path
+          from concurrent.futures import ThreadPoolExecutor, as_completed
 
-          url = "https://boatraceopenapi.github.io/results/v2/2025/20250501.json"
+          START = date(2025, 5, 1)
+          END   = date(2026, 4, 30)
 
-          print("取得開始")
-          print(url)
+          OUTPUT_DIR = Path("historical_raw")
+          OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-          with urllib.request.urlopen(url, timeout=30) as response:
-              data = json.load(response)
+          def make_url(d):
+              ymd = d.strftime("%Y%m%d")
 
-          print("取得成功")
-          print("データ型:", type(data).__name__)
+              # 2025年は旧Results API
+              if d <= date(2025, 12, 31):
+                  return f"https://boatraceopenapi.github.io/results/v2/{d.year}/{ymd}.json"
 
-          if isinstance(data, list):
-              print("レコード数:", len(data))
-          elif isinstance(data, dict):
-              print("キー数:", len(data))
-              print("主なキー:", list(data.keys())[:20])
+              # 2026年は後継API
+              return f"https://boatraceopenapi.github.io/api/v1/{d.year}/{ymd}.json"
 
-          with open("historical_test.json", "w", encoding="utf-8") as f:
-              json.dump(data, f, ensure_ascii=False, indent=2)
+          dates = []
+          current = START
 
-          print("historical_test.json を作成しました")
+          while current <= END:
+              dates.append(current)
+              current += timedelta(days=1)
+
+          print("========================================")
+          print("サイバーはっちゃん 過去1年データ取得")
+          print("========================================")
+          print("開始日:", START)
+          print("終了日:", END)
+          print("取得予定日数:", len(dates))
+          print("========================================")
+
+          def download_one(d):
+              url = make_url(d)
+
+              year_dir = OUTPUT_DIR / str(d.year) / d.strftime("%m")
+              year_dir.mkdir(parents=True, exist_ok=True)
+
+              output = year_dir / f"{d.strftime('%Y%m%d')}.json"
+
+              try:
+                  req = urllib.request.Request(
+                      url,
+                      headers={
+                          "User-Agent": "cyber-hacchan-historical-data/1.0"
+                      }
+                  )
+
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      data = json.load(response)
+
+                  with output.open("w", encoding="utf-8") as f:
+                      json.dump(
+                          data,
+                          f,
+                          ensure_ascii=False,
+                          separators=(",", ":")
+                      )
+
+                  return {
+                      "date": d,
+                      "url": url,
+                      "status": "ok",
+                      "size": output.stat().st_size,
+                      "path": str(output)
+                  }
+
+              except Exception as e:
+                  return {
+                      "date": d,
+                      "url": url,
+                      "status": "error",
+                      "error": str(e)
+                  }
+
+          results = []
+
+          # 同時接続を8本に制限
+          with ThreadPoolExecutor(max_workers=8) as executor:
+              futures = {
+                  executor.submit(download_one, d): d
+                  for d in dates
+              }
+
+              completed = 0
+
+              for future in as_completed(futures):
+                  result = future.result()
+                  results.append(result)
+
+                  completed += 1
+
+                  if completed % 25 == 0 or completed == len(dates):
+                      ok = sum(
+                          1 for r in results
+                          if r["status"] == "ok"
+                      )
+                      errors = completed - ok
+
+                      print(
+                          f"進捗: {completed}/{len(dates)} "
+                          f"成功={ok} エラー={errors}"
+                      )
+
+          results.sort(key=lambda x: x["date"])
+
+          success = [
+              r for r in results
+              if r["status"] == "ok"
+          ]
+
+          errors = [
+              r for r in results
+              if r["status"] == "error"
+          ]
+
+          total_bytes = sum(
+              r.get("size", 0)
+              for r in success
+          )
+
+          summary = {
+              "start_date": str(START),
+              "end_date": str(END),
+              "requested_days": len(dates),
+              "success_days": len(success),
+              "error_days": len(errors),
+              "total_bytes": total_bytes,
+              "errors": [
+                  {
+                      "date": str(r["date"]),
+                      "url": r["url"],
+                      "error": r["error"]
+                  }
+                  for r in errors
+              ]
+          }
+
+          with Path("historical_summary.json").open(
+              "w",
+              encoding="utf-8"
+          ) as f:
+              json.dump(
+                  summary,
+                  f,
+                  ensure_ascii=False,
+                  indent=2
+              )
+
+          print()
+          print("========================================")
+          print("取得結果")
+          print("========================================")
+          print("対象日数:", len(dates))
+          print("成功:", len(success))
+          print("エラー:", len(errors))
+          print("合計サイズ:", total_bytes, "bytes")
+          print("========================================")
+
+          if errors:
+              print()
+              print("エラーが発生した日:")
+              for r in errors[:20]:
+                  print(
+                      str(r["date"]),
+                      r["error"]
+                  )
+
+          if len(success) == 0:
+              raise SystemExit(
+                  "1日も取得できませんでした"
+              )
+
+          print()
+          print("過去データ取得: OK")
+          print("========================================")
           PY
 
-      - name: データ確認
+      - name: データ件数を確認
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
 
-          path = Path("historical_test.json")
+          root = Path("historical_raw")
+          files = sorted(root.rglob("*.json"))
 
-          if not path.exists():
-              raise SystemExit("データファイルが作成されていません")
+          print("========================================")
+          print("保存データ確認")
+          print("========================================")
+          print("JSONファイル数:", len(files))
 
-          with path.open(encoding="utf-8") as f:
-              data = json.load(f)
+          if not files:
+              raise SystemExit(
+                  "JSONファイルが1件もありません"
+              )
 
-          print("================================")
-          print("過去データ取得テスト")
-          print("================================")
-          print("ファイルサイズ:", path.stat().st_size, "bytes")
-          print("データ型:", type(data).__name__)
+          # 数ファイルを読み込んでJSONとして正常か確認
+          check_files = files[:10]
 
-          if isinstance(data, list):
-              print("レコード数:", len(data))
+          for path in check_files:
+              with path.open(
+                  encoding="utf-8"
+              ) as f:
+                  data = json.load(f)
 
+              print(
+                  "確認:",
+                  path,
+                  "->",
+                  type(data).__name__
+              )
+
+          print("========================================")
           print("JSON読み込み: OK")
-          print("================================")
-          print("次の段階へ進めます")
-          print("================================")
+          print("保存確認: OK")
+          print("========================================")
           PY
 
-      - name: 取得データを保存
+      - name: 取得結果を表示
+        run: |
+          echo "========================================"
+          echo "historical_summary.json"
+          echo "========================================"
+          cat historical_summary.json
+          echo "========================================"
+
+      - name: 過去データをArtifactに保存
         uses: actions/upload-artifact@v4
         with:
-          name: historical-test-data
-          path: historical_test.json
+          name: cyber-hacchan-historical-1year
+          path: |
+            historical_raw/
+            historical_summary.json
+          retention-days: 7
