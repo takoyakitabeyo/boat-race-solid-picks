@@ -1,10 +1,10 @@
-name: サイバーはっちゃん 強化版テスト
+name: サイバーはっちゃん 過去データ取得テスト
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  historical-data-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,8 +16,66 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 動作確認
+      - name: 過去データ取得
         run: |
-          python --version
-          echo "サイバーはっちゃん強化版の準備完了"
-          echo "GitHub Actionsは正常に動作しています"
+          python - <<'PY'
+          import json
+          import urllib.request
+
+          url = "https://boatraceopenapi.github.io/results/v2/2025/20250501.json"
+
+          print("取得開始")
+          print(url)
+
+          with urllib.request.urlopen(url, timeout=30) as response:
+              data = json.load(response)
+
+          print("取得成功")
+          print("データ型:", type(data).__name__)
+
+          if isinstance(data, list):
+              print("レコード数:", len(data))
+          elif isinstance(data, dict):
+              print("キー数:", len(data))
+              print("主なキー:", list(data.keys())[:20])
+
+          with open("historical_test.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+
+          print("historical_test.json を作成しました")
+          PY
+
+      - name: データ確認
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("historical_test.json")
+
+          if not path.exists():
+              raise SystemExit("データファイルが作成されていません")
+
+          with path.open(encoding="utf-8") as f:
+              data = json.load(f)
+
+          print("================================")
+          print("過去データ取得テスト")
+          print("================================")
+          print("ファイルサイズ:", path.stat().st_size, "bytes")
+          print("データ型:", type(data).__name__)
+
+          if isinstance(data, list):
+              print("レコード数:", len(data))
+
+          print("JSON読み込み: OK")
+          print("================================")
+          print("次の段階へ進めます")
+          print("================================")
+          PY
+
+      - name: 取得データを保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: historical-test-data
+          path: historical_test.json
